@@ -1,3 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = "dist/salon-booking/browser"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Fallback SPA : toute route inconnue renvoie index.html
+# (les fichiers réels — JS, CSS, /img — sont servis en priorité)
 [[redirects]]
   from = "/*"
   to = "/index.html"
