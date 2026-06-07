@@ -1,0 +1,54 @@
+<div class="container">
+  <div class="progress-bar">
+    <div class="progress-fill" [style.width]="'33%'"></div>
+  </div>
+  <div class="progress-label">Étape 1/3 - Choisir une date</div>
+
+  <main class="main-content">
+    <h2 class="step-title">Quand souhaitez-vous venir ?</h2>
+
+    <div class="date-list">
+      @if (loading) {
+        @for (item of skeletonItems; track item) {
+          <div class="skeleton-date-btn">
+            <div class="skeleton-info">
+              <div class="skeleton-line skeleton-line-medium"></div>
+              <div class="skeleton-line skeleton-line-short"></div>
+            </div>
+            <div class="skeleton-arrow"></div>
+          </div>
+        }
+      } @else {
+        @for (dateOption of dateOptions; track dateOption.date) {
+          <button
+            class="date-btn"
+            [class.selected]="selectedDate === dateOption.date"
+            (click)="selectDate(dateOption.date)">
+            <div>
+              <div class="date-label">
+                {{ dateOption.label }}
+                @if (dateOption.isToday) {
+                  <app-icon name="zap" [size]="15" class="today-icon"></app-icon>
+                }
+              </div>
+              @if (dateOption.dayName) {
+                <div class="date-day">{{ dateOption.dayName }}</div>
+              }
+            </div>
+            <span class="arrow"><app-icon name="arrow-right" [size]="18"></app-icon></span>
+          </button>
+        }
+      }
+    </div>
+
+    <div class="btn-container">
+      <button class="btn btn-secondary" (click)="goBack()">Retour</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedDate || loading"
+        (click)="continue()">
+        Continuer
+      </button>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,213 @@
+<div class="container">
+  <header class="header">
+    <button class="back-btn" (click)="goHome()">
+      <app-icon name="arrow-left" [size]="15"></app-icon> Accueil
+    </button>
+    <!-- <h1 class="brand">DS Nails</h1> -->
+    <p class="brand-sub">Mon espace</p>
+  </header>
+
+  <main class="main-content">
+    <div class="tabs">
+      <button
+        class="tab"
+        [class.active]="activeTab === 'login'"
+        (click)="setTab('login')">
+        Se connecter
+      </button>
+      <button
+        class="tab"
+        [class.active]="activeTab === 'register'"
+        (click)="setTab('register')">
+        S'inscrire
+      </button>
+    </div>
+
+    @if (activeTab === 'login') {
+      <form class="form" (ngSubmit)="login()" #loginForm="ngForm">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            type="email"
+            class="form-input"
+            [class.input-error]="loginEmailError"
+            [(ngModel)]="loginEmail"
+            name="loginEmail"
+            placeholder="Entrez votre adresse e-mail"
+            required
+            (blur)="onLoginEmailBlur()">
+          @if (loginEmailError) {
+            <span class="field-error">{{ loginEmailError }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <div class="input-wrap">
+            <input
+              [type]="showLoginPassword ? 'text' : 'password'"
+              class="form-input"
+              [(ngModel)]="loginPassword"
+              name="loginPassword"
+              placeholder="••••••••"
+              required>
+            <button type="button" class="eye-btn" (click)="showLoginPassword = !showLoginPassword"
+              [attr.aria-label]="showLoginPassword ? 'Cacher le mot de passe' : 'Afficher le mot de passe'">
+              @if (showLoginPassword) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="forgot-link" (click)="showResetModal = true">
+          Vous avez oublié votre mot de passe ?
+        </button>
+
+        @if (error) {
+          <div class="alert alert-error">{{ error }}</div>
+        }
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!loginForm.form.valid || loading || !!loginEmailError">
+          @if (loading) {
+            <span class="spinner-small"></span> Connexion...
+          } @else {
+            Se connecter
+          }
+        </button>
+      </form>
+    }
+
+    @if (activeTab === 'register') {
+      <form class="form" (ngSubmit)="register()" #registerForm="ngForm">
+        <div class="form-group">
+          <label class="form-label">Nom complet</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="regName"
+            name="regName"
+            placeholder="Entrez votre nom complet"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <app-phone-input
+            [(ngModel)]="regPhone"
+            name="regPhone"
+            required
+            [hasError]="!!regPhoneError"
+            (phoneBlur)="onRegPhoneBlur()">
+          </app-phone-input>
+          @if (checkingRegPhone) {
+            <span class="field-hint">Vérification en cours...</span>
+          }
+          @if (regPhoneError) {
+            <span class="field-error">{{ regPhoneError }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            type="email"
+            class="form-input"
+            [class.input-error]="regEmailError"
+            [(ngModel)]="regEmail"
+            name="regEmail"
+            placeholder="Entrez votre adresse e-mail"
+            required
+            (blur)="onRegEmailBlur()">
+          @if (checkingRegEmail) {
+            <span class="field-hint">Vérification en cours...</span>
+          }
+          @if (regEmailError) {
+            <span class="field-error">{{ regEmailError }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <div class="input-wrap">
+            <input
+              [type]="showRegPassword ? 'text' : 'password'"
+              class="form-input"
+              [(ngModel)]="regPassword"
+              name="regPassword"
+              placeholder="Minimum 8 caractères"
+              minlength="8"
+              required>
+            <button type="button" class="eye-btn" (click)="showRegPassword = !showRegPassword"
+              [attr.aria-label]="showRegPassword ? 'Cacher le mot de passe' : 'Afficher le mot de passe'">
+              @if (showRegPassword) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (regPassword) {
+            <ul class="pwd-checks">
+              <li class="pwd-check" [class.valid]="pwdChecks.length">
+                <span class="check-icon"><app-icon [name]="pwdChecks.length ? 'check' : 'x'" [size]="14"></app-icon></span>
+                8 caractères minimum
+              </li>
+              <li class="pwd-check" [class.valid]="pwdChecks.uppercase">
+                <span class="check-icon"><app-icon [name]="pwdChecks.uppercase ? 'check' : 'x'" [size]="14"></app-icon></span>
+                1 lettre majuscule (A-Z)
+              </li>
+              <li class="pwd-check" [class.valid]="pwdChecks.special">
+                <span class="check-icon"><app-icon [name]="pwdChecks.special ? 'check' : 'x'" [size]="14"></app-icon></span>
+                1 caractère spécial (!&#64;#$%...)
+              </li>
+            </ul>
+          }
+        </div>
+
+        @if (error) {
+          <div class="alert alert-error">{{ error }}</div>
+        }
+
+        @if (successMessage) {
+          <div class="alert alert-success">{{ successMessage }}</div>
+        }
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!registerForm.form.valid || loading || checkingRegPhone || checkingRegEmail || !!regPhoneError || !!regEmailError || !isPasswordValid">
+          @if (loading) {
+            <span class="spinner-small"></span> Inscription...
+          } @else {
+            Créer mon compte
+          }
+        </button>
+      </form>
+    }
+  </main>
+</div>
+
+@if (showResetModal) {
+  <app-password-reset-modal
+    [initialEmail]="loginEmail"
+    (closed)="showResetModal = false">
+  </app-password-reset-modal>
+}

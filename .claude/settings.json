@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(npx tailwindcss *)"
+      "Bash(npx tailwindcss *)",
+      "Bash(npx ng *)",
+      "WebFetch(domain:oshunhair.as.me)",
+      "Bash(find . -path ./node_modules -prune -o -iname \"ds-nails*\" -print)",
+      "Bash(ls -la src/app/assets/img/)",
+      "Bash(ls -la src/assets/)",
+      "Bash(ls -la public/)",
+      "Bash(node -e \"try{require.resolve\\('sharp'\\);console.log\\('sharp OK'\\)}catch\\(e\\){console.log\\('no sharp'\\)}\")",
+      "Bash(node -e \"try{require.resolve\\('png-to-ico'\\);console.log\\('png-to-ico OK'\\)}catch\\(e\\){console.log\\('no png-to-ico'\\)}\")",
+      "Bash(find . -path ./node_modules -prune -o -iname \"dsnails-*\" -print)",
+      "Bash(ls public/img)",
+      "Bash(ls src/app/assets/img)"
     ]
   }
 }

@@ -1,0 +1,207 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--card);
+}
+
+.progress-bar {
+  height: 3px;
+  background: #EBD7E9;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F3B1F1, #F8CFF6);
+  transition: width 0.5s ease;
+}
+
+.progress-label {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #69005A;
+  font-weight: 500;
+  background: #FCF4FB;
+}
+
+.main-content {
+  padding: 2rem 1.5rem;
+}
+
+.step-title {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.8rem;
+  color: #69005A;
+  margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+
+.date-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+// --- Boutons réels ---
+
+.date-btn {
+  background: #FCF4FB;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  &:hover {
+    border-color: #69005A;
+    transform: translateX(4px);
+    background: #FCF4FB;
+
+    .arrow { opacity: 1; }
+  }
+
+  &.selected {
+    background: #F3B1F1;
+    color: #69005A;
+    border-color: #69005A;
+
+    .arrow { opacity: 1; }
+  }
+}
+
+.date-label {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.today-icon {
+  color: #69005A;
+}
+
+.date-btn.selected .today-icon {
+  color: #69005A;
+}
+
+.date-day {
+  font-size: 0.82rem;
+  opacity: 0.75;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+// --- Skeleton ---
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-date-btn {
+  background: #f5f0eb;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  overflow: hidden;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 100%
+    );
+    background-size: 400px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+.skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.skeleton-line {
+  height: 13px;
+  border-radius: 6px;
+  background: #EBD7E9;
+}
+
+.skeleton-line-medium { width: 55%; }
+.skeleton-line-short  { width: 35%; }
+
+.skeleton-arrow {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #EBD7E9;
+  flex-shrink: 0;
+}
+
+// --- Boutons ---
+
+.btn-container {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #F3B1F1 0%, #F8CFF6 100%);
+  color: #69005A;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(243, 177, 241, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  background: #EBD7E9;
+  color: #69005A;
+
+  &:hover { background: #FCF4FB; }
+}

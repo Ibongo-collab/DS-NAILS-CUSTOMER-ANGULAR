@@ -2,18 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&display=swap');
+:root {
+  /* Fonds clairs (blanc dominant) */
+  --bg:        #FFFFFF;
+  --bg-elev:   #FDF6FC;
+  --card:      #FFFFFF;
+  --card-2:    #FCF4FB;
+
+  /* Rose accent (liens & boutons) */
+  --gold:        #F3B1F1;
+  --gold-light:  #F8CFF6;
+  --gold-deep:   #D98FD6;
+  --gold-grad:   linear-gradient(135deg, #F8CFF6 0%, #F3B1F1 50%, #E89CE6 100%);
+  --rose:        #F3B1F1;
+
+  /* Textes */
+  --text:      #2A2A2A;
+  --text-dim:  #8A8088;
+
+  /* Titres & liens */
+  --heading:   #69005A;
+  --link:      #69005A;
+  --link-hover:#4A0040;
+
+  /* Bordures & ombres */
+  --border:      rgba(243, 177, 241, 0.45);
+  --border-soft: rgba(243, 177, 241, 0.26);
+  --shadow:      0 12px 40px rgba(180, 120, 175, 0.14);
+}
+
+html, body {
+  background: var(--bg);
+}
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background: #FFF8F0;
-  color: #2A2A2A;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: var(--heading);
 }
 
+/* Accent titre (ex. "DS Nails") */
+.text-gold {
+  color: var(--heading);
+}
+
+/* Barre de défilement assortie */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 160, 106, 0.30);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(201, 160, 106, 0.50); }

@@ -1,0 +1,61 @@
+<div class="phone-field" [class.disabled]="isDisabled" [class.error]="hasError">
+
+  <!-- Sélecteur de pays -->
+  <button
+    type="button"
+    class="country-btn"
+    [disabled]="isDisabled"
+    (click)="toggleDropdown($event)"
+    aria-label="Choisir le pays">
+    <span class="flag">{{ getFlag(selectedCountry.iso) }}</span>
+    <span class="dial">+{{ selectedCountry.dialCode }}</span>
+    <svg class="chevron" [class.rotated]="isOpen" xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </button>
+
+  <span class="separator"></span>
+
+  <!-- Saisie du numéro local -->
+  <input
+    type="tel"
+    class="number-input"
+    [(ngModel)]="localNumber"
+    name="__phone_local__"
+    placeholder="Numéro sans indicatif"
+    [disabled]="isDisabled"
+    (ngModelChange)="emit()"
+    (blur)="onNumberBlur()">
+
+  <!-- Dropdown pays -->
+  @if (isOpen) {
+    <div class="dropdown" (click)="$event.stopPropagation()">
+      <div class="search-wrap">
+        <input
+          type="text"
+          class="search-input"
+          [(ngModel)]="searchTerm"
+          name="__phone_search__"
+          placeholder="Rechercher un pays..."
+          autofocus>
+      </div>
+      <ul class="country-list">
+        @for (country of filteredCountries; track country.iso + country.dialCode) {
+          <li
+            class="country-item"
+            [class.active]="country.iso === selectedCountry.iso"
+            (click)="selectCountry(country)">
+            <span class="item-flag">{{ getFlag(country.iso) }}</span>
+            <span class="item-name">{{ country.name }}</span>
+            <span class="item-code">+{{ country.dialCode }}</span>
+          </li>
+        }
+        @if (filteredCountries.length === 0) {
+          <li class="no-result">Aucun pays trouvé</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

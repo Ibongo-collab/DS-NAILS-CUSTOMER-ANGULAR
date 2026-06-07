@@ -1,0 +1,91 @@
+<div class="home-container">
+  <header class="hero">
+    <!-- <div class="hero-glow"></div> -->
+
+    <p class="hero-eyebrow">Salon de beauté &amp; onglerie</p>
+    <h1 class="hero-title">Bienvenue chez <span class="text-gold">DS Nails</span></h1>
+    <p class="hero-tagline">Prenez rendez-vous en quelques clics</p>
+
+    <button class="cta-button" (click)="startBooking()">
+      <app-icon name="calendar" [size]="18"></app-icon>
+      Réserver maintenant
+    </button>
+
+    <span class="hero-divider"></span>
+
+    <!-- Infos pratiques -->
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-body">
+          <h3>Horaires</h3>
+          <p>Lundi – Samedi&nbsp;: 9h – 19h</p>
+          <p class="muted">Dimanche&nbsp;: fermé</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-body">
+          <h3>Adresse</h3>
+          <p>HLM Grand Yoff</p>
+          <p class="muted">Dakar, Sénégal</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-body">
+          <h3>Note</h3>
+          <p>4,8 / 5</p>
+          <p class="muted">127 avis clients</p>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-body">
+          <h3>Contacts</h3>
+          <a class="contact-link" href="mailto:contact@dsnails.com">contact&#64;dsnails.com</a>
+          <a class="contact-link" href="https://instagram.com/dsnails" target="_blank" rel="noopener">&#64;dsnails</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Galerie -->
+    <div class="gallery">
+      <img class="gallery-img" src="img/dsnails-1.jpeg" alt="Réalisation DS Nails 1" loading="lazy">
+      <img class="gallery-img" src="img/dsnails-2.jpeg" alt="Réalisation DS Nails 2" loading="lazy">
+      <img class="gallery-img" src="img/dsnails-3.jpeg" alt="Réalisation DS Nails 3" loading="lazy">
+      <img class="gallery-img" src="img/dsnails-4.jpeg" alt="Réalisation DS Nails 4" loading="lazy">
+    </div>
+  </header>
+
+  <!-- Liste des prestations -->
+  <section class="services-section" id="services">
+    <div class="services-head">
+      <h2>Nos prestations</h2>
+    </div>
+
+    <div class="services-card">
+      @if (loadingServices) {
+        @for (row of skeletonRows; track row) {
+          <div class="service-row">
+            <span class="skeleton-line"></span>
+            <span class="skeleton-btn"></span>
+          </div>
+        }
+      } @else {
+        @for (service of services; track service.id) {
+          <div class="service-row">
+            <div class="service-info">
+              <span class="service-title">{{ service.name }}</span>
+              <span class="service-meta">{{ serviceMeta(service) }}</span>
+            </div>
+            <button class="select-btn" (click)="selectService(service)">
+              Sélectionner
+            </button>
+          </div>
+        } @empty {
+          <div class="services-empty">Aucune prestation disponible pour le moment.</div>
+        }
+      }
+    </div>
+  </section>
+</div>

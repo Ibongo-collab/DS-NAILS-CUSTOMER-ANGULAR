@@ -1,0 +1,256 @@
+<div class="container">
+  <div class="progress-bar">
+    <div class="progress-fill" [style.width]="'100%'"></div>
+  </div>
+  <div class="progress-label">Étape 3/3 - Vos informations</div>
+
+  <main class="main-content">
+    <h2 class="step-title">Vos informations</h2>
+
+    @if (mustLogin) {
+      <div class="account-detected-card">
+        <div class="account-detected-header">
+          <span class="account-icon"><app-icon name="user" [size]="22"></app-icon></span>
+          <div>
+            <p class="account-detected-title">Vous avez un compte DS Nails</p>
+            <p class="account-detected-desc">Il se pourrait que ces informations correspondent à un compte existant. Connectez-vous pour associer la réservation à votre compte, ou continuez directement.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            type="email"
+            class="form-input"
+            [(ngModel)]="loginEmail"
+            name="inlineLoginEmail"
+            placeholder="Entrez votre adresse e-mail">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <div class="input-wrap">
+            <input
+              [type]="showLoginPassword ? 'text' : 'password'"
+              class="form-input"
+              [(ngModel)]="loginPassword"
+              name="inlineLoginPassword"
+              placeholder="••••••••">
+            <button type="button" class="eye-btn" (click)="showLoginPassword = !showLoginPassword"
+              [attr.aria-label]="showLoginPassword ? 'Cacher' : 'Afficher'">
+              @if (showLoginPassword) {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="forgot-link" (click)="showResetModal = true">
+          Vous avez oublié votre mot de passe ?
+        </button>
+
+        @if (loginError) {
+          <div class="inline-error">{{ loginError }}</div>
+        }
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="loginLoading || !loginEmail || !loginPassword"
+          (click)="inlineLogin()">
+          @if (loginLoading) {
+            <span class="spinner-small"></span> Connexion...
+          } @else {
+            Se connecter
+          }
+        </button>
+
+        <button type="button" class="btn-link" (click)="goToAuth()">
+          Accéder à la page de connexion <app-icon name="arrow-right" [size]="15"></app-icon>
+        </button>
+      </div>
+
+      <hr class="section-divider">
+    }
+
+    <form (ngSubmit)="submit()" #bookingForm="ngForm">
+      <div class="form-group">
+        <label class="form-label">Nom complet *</label>
+        <input
+          type="text"
+          class="form-input"
+          [class.input-readonly]="isAuthenticated"
+          [(ngModel)]="clientName"
+          name="clientName"
+          placeholder="Entrez votre nom complet"
+          required
+          [readonly]="isAuthenticated">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Téléphone *</label>
+        <app-phone-input
+          [(ngModel)]="clientPhone"
+          name="clientPhone"
+          required
+          [hasError]="!!phoneError"
+          (ngModelChange)="onFieldChange()"
+          (phoneBlur)="onPhoneBlur()">
+        </app-phone-input>
+        @if (checkingPhone) {
+          <span class="field-hint">Vérification en cours...</span>
+        }
+        @if (phoneError) {
+          <span class="field-error">{{ phoneError }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Email
+          @if (!isAuthenticated) {
+            <span class="optional-label">(optionnel)</span>
+          }
+        </label>
+        <input
+          type="email"
+          class="form-input"
+          [class.input-error]="emailError"
+          [class.input-readonly]="isAuthenticated"
+          [(ngModel)]="clientEmail"
+          name="clientEmail"
+          placeholder="Entrez votre adresse e-mail"
+          [readonly]="isAuthenticated"
+          (ngModelChange)="onFieldChange()"
+          (blur)="onEmailBlur()">
+        @if (emailError) {
+          <span class="field-error">{{ emailError }}</span>
+        }
+      </div>
+
+      @if (!isAuthenticated && !mustLogin) {
+        <div class="separator-or">
+          <span class="sep-line"></span>
+          <span class="sep-label">Ou</span>
+          <span class="sep-line"></span>
+        </div>
+
+        @if (!showManualLogin) {
+          <button type="button" class="btn-login-toggle" (click)="openManualLogin()">
+            Se connecter
+          </button>
+        } @else {
+          <div class="manual-login-block">
+            <p class="manual-login-title">Connectez-vous pour associer la réservation à votre compte</p>
+
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-input"
+                [(ngModel)]="loginEmail"
+                name="manualLoginEmail"
+                placeholder="Entrez votre adresse e-mail">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mot de passe</label>
+              <div class="input-wrap">
+                <input
+                  [type]="showLoginPassword ? 'text' : 'password'"
+                  class="form-input"
+                  [(ngModel)]="loginPassword"
+                  name="manualLoginPassword"
+                  placeholder="••••••••">
+                <button type="button" class="eye-btn" (click)="showLoginPassword = !showLoginPassword"
+                  [attr.aria-label]="showLoginPassword ? 'Cacher' : 'Afficher'">
+                  @if (showLoginPassword) {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <button type="button" class="forgot-link" (click)="showResetModal = true">
+              Vous avez oublié votre mot de passe ?
+            </button>
+
+            @if (loginError) {
+              <div class="inline-error">{{ loginError }}</div>
+            }
+
+            <div class="manual-login-actions">
+              <button type="button" class="btn btn-secondary" (click)="showManualLogin = false; loginError = ''">
+                Annuler
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="loginLoading || !loginEmail || !loginPassword"
+                (click)="inlineLogin()">
+                @if (loginLoading) {
+                  <span class="spinner-small"></span> Connexion...
+                } @else {
+                  Se connecter
+                }
+              </button>
+            </div>
+          </div>
+        }
+      }
+
+      <div class="form-group">
+        <label class="checkbox-group">
+          <input
+            type="checkbox"
+            [(ngModel)]="whatsappNotif"
+            name="whatsappNotif">
+          <span>Recevoir un rappel WhatsApp 24h avant</span>
+        </label>
+      </div>
+
+      @if (error) {
+        <div class="error">{{ error }}</div>
+      }
+
+      <div class="btn-container">
+        <button type="button" class="btn btn-secondary" (click)="goBack()">
+          Retour
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!bookingForm.form.valid || submitting || checkingPhone || !!phoneError || !!emailError">
+          @if (!submitting) {
+            <span>Confirmer</span>
+          } @else {
+            <span><span class="spinner-small"></span> Réservation...</span>
+          }
+        </button>
+      </div>
+    </form>
+  </main>
+</div>
+
+@if (showResetModal) {
+  <app-password-reset-modal
+    [initialEmail]="loginEmail || clientEmail"
+    (closed)="showResetModal = false">
+  </app-password-reset-modal>
+}

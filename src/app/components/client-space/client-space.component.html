@@ -1,0 +1,134 @@
+<div class="container">
+  <header class="header">
+    <div class="header-top">
+      <button class="back-btn" (click)="goHome()">
+        <app-icon name="arrow-left" [size]="15"></app-icon> Accueil
+      </button>
+      <button class="logout-btn" (click)="logout()">Déconnexion</button>
+    </div>
+    <div class="header-body">
+      <p class="greeting">Bonjour,</p>
+      <h1 class="user-name">{{ userName }}</h1>
+    </div>
+  </header>
+
+  <main class="main-content">
+    @if (cancelError) {
+      <div class="cancel-error">{{ cancelError }}</div>
+    }
+
+    @if (loading) {
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        <p>Chargement de vos réservations...</p>
+      </div>
+    }
+
+    @if (!loading) {
+      <section class="section">
+        <h2 class="section-title">À venir</h2>
+
+        @if (upcomingBookings.length === 0) {
+          <div class="empty-state">
+            <p>Aucune réservation à venir.</p>
+            <button class="link-btn" (click)="newBooking()">
+              Prendre un rendez-vous <app-icon name="arrow-right" [size]="15"></app-icon>
+            </button>
+          </div>
+        }
+
+        @for (booking of upcomingBookings; track booking.id) {
+          <div class="booking-card upcoming">
+            <div class="booking-header">
+              <span class="service-name">{{ booking.services?.name || 'Service' }}</span>
+              <span class="status-badge" [class]="'badge-' + booking.status">
+                {{ statusLabel(booking.status) }}
+              </span>
+            </div>
+            <div class="booking-details">
+              <span class="booking-date">{{ formatDate(booking.booking_date) }}</span>
+              <span class="separator">·</span>
+              <span class="booking-time">{{ booking.start_time }}</span>
+              <span class="separator">·</span>
+              <span class="booking-duration">{{ booking.services?.duration_minutes }} min</span>
+            </div>
+            @if (canCancel(booking)) {
+              <div class="booking-actions">
+                <button
+                  class="btn btn-cancel"
+                  [disabled]="cancellingId === booking.id"
+                  (click)="confirmCancel(booking)">
+                  Annuler
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <hr>
+      
+      <section class="section">
+        <h2 class="section-title">Historique</h2>
+
+        @if (pastBookings.length === 0) {
+          <div class="empty-state">
+            <p>Aucun historique de réservation.</p>
+          </div>
+        }
+
+        @for (booking of visiblePastBookings; track booking.id) {
+          <div class="booking-card past">
+            <div class="booking-header">
+              <span class="service-name">{{ booking.services?.name || 'Service' }}</span>
+              <span class="status-badge" [class]="'badge-' + booking.status">
+                {{ statusLabel(booking.status) }}
+              </span>
+            </div>
+            <div class="booking-details">
+              <span class="booking-date">{{ formatDate(booking.booking_date) }}</span>
+              <span class="separator">·</span>
+              <span class="booking-time">{{ booking.start_time }}</span>
+            </div>
+          </div>
+        }
+
+        @if (hasMoreHistory) {
+          <button class="load-more-btn" (click)="showMoreHistory()">
+            Afficher plus
+            <span class="load-more-count">({{ pastBookings.length - visiblePastBookings.length }} restants)</span>
+          </button>
+        }
+      </section>
+    }
+  </main>
+
+  @if (showCancelModal && bookingToCancel) {
+    <div class="modal-overlay">
+      <div class="modal">
+        <div class="modal-icon"><app-icon name="calendar" [size]="40"></app-icon></div>
+        <h3 class="modal-title">Annuler ce rendez-vous ?</h3>
+        <p class="modal-body">
+          <strong>{{ bookingToCancel.services?.name || 'Rendez-vous' }}</strong><br>
+          {{ formatDate(bookingToCancel.booking_date) }} à {{ bookingToCancel.start_time }}
+        </p>
+        <p class="modal-warning">Cette action est irréversible.</p>
+        <div class="modal-actions">
+          <button class="btn-modal btn-modal-keep" (click)="dismissCancel()">
+            NON
+          </button>
+          <button
+            class="btn-modal btn-modal-cancel"
+            [disabled]="!!cancellingId"
+            (click)="proceedCancel()">
+            @if (cancellingId) {
+              <span class="spinner-small"></span> Annulation...
+            } @else {
+              OUI
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
