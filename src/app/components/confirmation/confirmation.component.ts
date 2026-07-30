@@ -3,11 +3,12 @@ import { Router } from '@angular/router';
 import { BookingService } from '../../services/booking.service';
 import { BookingState } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
+import { TimePipe } from '../../pipes/time.pipe';
 
 @Component({
   selector: 'app-confirmation',
   standalone: true,
-  imports: [IconComponent],
+  imports: [IconComponent, TimePipe],
   templateUrl: './confirmation.component.html',
   styleUrls: ['./confirmation.component.scss']
 })

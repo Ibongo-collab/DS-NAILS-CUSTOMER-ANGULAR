@@ -23,11 +23,14 @@
           <button
             class="date-btn"
             [class.selected]="selectedDate === dateOption.date"
-            (click)="selectDate(dateOption.date)">
+            [class.unavailable]="!dateOption.available"
+            [disabled]="!dateOption.available"
+            [attr.aria-disabled]="!dateOption.available"
+            (click)="selectDate(dateOption)">
             <div>
               <div class="date-label">
                 {{ dateOption.label }}
-                @if (dateOption.isToday) {
+                @if (dateOption.isToday && dateOption.available) {
                   <app-icon name="zap" [size]="15" class="today-icon"></app-icon>
                 }
               </div>
@@ -35,7 +38,11 @@
                 <div class="date-day">{{ dateOption.dayName }}</div>
               }
             </div>
-            <span class="arrow"><app-icon name="arrow-right" [size]="18"></app-icon></span>
+            @if (dateOption.available) {
+              <span class="arrow"><app-icon name="arrow-right" [size]="18"></app-icon></span>
+            } @else {
+              <span class="unavailable-tag">{{ dateOption.unavailableLabel }}</span>
+            }
           </button>
         }
       }

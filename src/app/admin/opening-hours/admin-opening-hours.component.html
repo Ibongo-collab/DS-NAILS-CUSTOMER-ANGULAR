@@ -1,0 +1,73 @@
+@if (error) {
+  <div class="alert alert-error">{{ error }}</div>
+}
+@if (success) {
+  <div class="alert alert-success">{{ success }}</div>
+}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Horaires d'ouverture</h2>
+    <button class="btn-sm" (click)="load()" [disabled]="loading">Actualiser</button>
+  </div>
+
+  @if (loading) {
+    <div class="state">Chargement des horaires…</div>
+  } @else {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Jour</th>
+            <th>Fermé</th>
+            <th>Ouverture</th>
+            <th>Fermeture</th>
+            <th class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.source.id) {
+            <tr>
+              <td class="cell-strong">{{ row.label }}</td>
+              <td>
+                <input
+                  type="checkbox"
+                  class="closed-toggle"
+                  [(ngModel)]="row.is_closed"
+                  [attr.aria-label]="'Fermer le ' + row.label">
+              </td>
+              <td>
+                <input type="time" [(ngModel)]="row.start_time" [disabled]="row.is_closed">
+              </td>
+              <td>
+                <input type="time" [(ngModel)]="row.end_time" [disabled]="row.is_closed">
+              </td>
+              <td class="cell-actions">
+                <button
+                  class="btn-sm btn-primary-sm"
+                  [disabled]="!canSave(row)"
+                  (click)="save(row)">
+                  Enregistrer
+                </button>
+                <button class="btn-sm" [disabled]="!isDirty(row)" (click)="reset(row)">
+                  Annuler
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="state">Aucun horaire enregistré.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <div class="panel-body">
+    <p class="cell-muted">
+      Un jour coché « fermé » disparaît des créneaux réservables et s'affiche
+      « fermé » sur la page d'accueil.
+    </p>
+  </div>
+</div>

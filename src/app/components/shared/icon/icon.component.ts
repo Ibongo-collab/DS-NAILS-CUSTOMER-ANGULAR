@@ -4,7 +4,7 @@ export type IconName =
   | 'map-pin' | 'clock' | 'star' | 'sparkles' | 'scissors' | 'user'
   | 'smartphone' | 'calendar' | 'wallet' | 'mail' | 'check-circle'
   | 'zap' | 'footprints' | 'check' | 'x' | 'arrow-left' | 'arrow-right'
-  | 'party' | 'instagram' | 'phone' | 'grid';
+  | 'party' | 'instagram' | 'tiktok' | 'whatsapp' | 'phone' | 'grid' | 'image';
 
 @Component({
   selector: 'app-icon',
@@ -98,6 +98,20 @@ export type IconName =
           <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
           <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
           <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+        }
+        @case ('tiktok') {
+          <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+        }
+        @case ('image') {
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>
+        }
+        @case ('whatsapp') {
+          <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5z"/>
+          <g transform="translate(6.96 5.96) scale(0.42)" stroke-width="4.8">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </g>
         }
         @case ('phone') {
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>

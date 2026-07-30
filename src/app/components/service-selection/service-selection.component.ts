@@ -4,6 +4,7 @@ import { BookingService } from '../../services/booking.service';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { Service } from '../../models/booking.model';
 
+
 @Component({
   selector: 'app-service-selection',
   standalone: true,
@@ -47,6 +48,11 @@ export class ServiceSelectionComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  /** Photo téléversée depuis l'administration. */
+  getServiceImage(service: Service): string | null {
+    return service.image_url || null;
   }
 
   selectService(service: Service): void {

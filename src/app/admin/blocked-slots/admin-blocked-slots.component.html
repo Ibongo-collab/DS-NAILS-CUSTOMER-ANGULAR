@@ -1,0 +1,74 @@
+@if (error) {
+  <div class="alert alert-error">{{ error }}</div>
+}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Bloquer un créneau</h2>
+  </div>
+  <div class="panel-body">
+    <div class="field-grid">
+      <div class="field">
+        <label for="slot-date">Date</label>
+        <input id="slot-date" type="date" [(ngModel)]="draft.date">
+      </div>
+      <div class="field">
+        <label for="slot-start">Début</label>
+        <input id="slot-start" type="time" [(ngModel)]="draft.start_time">
+      </div>
+      <div class="field">
+        <label for="slot-end">Fin</label>
+        <input id="slot-end" type="time" [(ngModel)]="draft.end_time">
+      </div>
+      <div class="field">
+        <label for="slot-reason">Motif</label>
+        <input id="slot-reason" type="text" [(ngModel)]="draft.reason" placeholder="Congés, formation…">
+      </div>
+      <button class="btn-sm btn-primary-sm" [disabled]="!canCreate || creating" (click)="create()">
+        {{ creating ? 'Ajout…' : 'Bloquer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Indisponibilités</h2>
+    <button class="btn-sm" (click)="load()" [disabled]="loading">Actualiser</button>
+  </div>
+
+  @if (loading) {
+    <div class="state">Chargement des indisponibilités…</div>
+  } @else {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Créneau</th>
+            <th>Motif</th>
+            <th class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (slot of slots; track slot.id) {
+            <tr [class.past]="isPast(slot)">
+              <td class="cell-strong">{{ formatDate(slot.date) }}</td>
+              <td>{{ formatTime(slot.start_time) }} – {{ formatTime(slot.end_time) }}</td>
+              <td>{{ slot.reason || '—' }}</td>
+              <td class="cell-actions">
+                <button class="btn-sm btn-danger" [disabled]="busyId === slot.id" (click)="remove(slot)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4" class="state">Aucune indisponibilité enregistrée.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

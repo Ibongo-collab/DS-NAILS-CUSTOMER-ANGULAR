@@ -125,6 +125,51 @@
   gap: 0.35rem;
 }
 
+/* Accès aux paramètres : même carte que les réservations, en version cliquable */
+.settings-row {
+  width: 100%;
+  background: var(--card);
+  border: none;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #69005A;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: #FCF4FB;
+    transform: translateX(3px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #69005A;
+    outline-offset: 2px;
+  }
+}
+
+.settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.settings-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.settings-hint {
+  font-size: 0.82rem;
+  color: #8A6A85;
+}
+
 .booking-card {
   background: var(--card);
   border-radius: 12px;

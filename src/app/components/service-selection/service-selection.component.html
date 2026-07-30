@@ -24,7 +24,11 @@
             class="service-card"
             [class.selected]="selectedService?.id === service.id"
             (click)="selectService(service)">
-            <div class="service-icon">{{ service.icon }}</div>
+            @if (getServiceImage(service); as image) {
+              <img class="service-image" [src]="image" [alt]="service.name" loading="lazy">
+            } @else {
+              <div class="service-image service-image-empty" aria-hidden="true"></div>
+            }
             <div class="service-info">
               <div class="service-name">{{ service.name }}</div>
               <div class="service-details">

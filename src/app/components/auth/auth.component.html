@@ -68,12 +68,16 @@
           </div>
         </div>
 
-        <button type="button" class="forgot-link" (click)="showResetModal = true">
+        <button type="button" class="forgot-link" (click)="goToForgotPassword()">
           Vous avez oublié votre mot de passe ?
         </button>
 
         @if (error) {
           <div class="alert alert-error">{{ error }}</div>
+        }
+
+        @if (successMessage) {
+          <div class="alert alert-success">{{ successMessage }}</div>
         }
 
         <button
@@ -101,6 +105,33 @@
             placeholder="Entrez votre nom complet"
             required>
         </div>
+
+        <fieldset class="form-group gender-group">
+          <legend class="form-label">Civilité</legend>
+          <div class="radio-row">
+            <label class="radio-option" [class.checked]="regGender === 'femme'">
+              <input
+                type="radio"
+                name="regGender"
+                value="femme"
+                [(ngModel)]="regGender"
+                (ngModelChange)="regGenderError = ''">
+              <span>Femme</span>
+            </label>
+            <label class="radio-option" [class.checked]="regGender === 'homme'">
+              <input
+                type="radio"
+                name="regGender"
+                value="homme"
+                [(ngModel)]="regGender"
+                (ngModelChange)="regGenderError = ''">
+              <span>Homme</span>
+            </label>
+          </div>
+          @if (regGenderError) {
+            <span class="field-error">{{ regGenderError }}</span>
+          }
+        </fieldset>
 
         <div class="form-group">
           <label class="form-label">Téléphone</label>
@@ -205,9 +236,9 @@
   </main>
 </div>
 
-@if (showResetModal) {
-  <app-password-reset-modal
-    [initialEmail]="loginEmail"
-    (closed)="showResetModal = false">
-  </app-password-reset-modal>
+@if (showEmailConfirmationModal) {
+  <app-email-confirmation-modal
+    [email]="registeredEmail"
+    (closed)="closeEmailConfirmationModal()">
+  </app-email-confirmation-modal>
 }

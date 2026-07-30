@@ -1,0 +1,160 @@
+@use '../admin-ui' as *;
+
+td input {
+  width: 100%;
+  min-width: 90px;
+}
+
+// --- Photo dans le formulaire d'ajout ---
+
+.image-field {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(105, 0, 90, 0.08);
+}
+
+.image-label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #7A3A70;
+}
+
+/* Zone de dépôt : le <label> englobe un <input file> masqué, ce qui rend
+   toute la surface cliquable sans JavaScript */
+.dropzone {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 2px dashed rgba(105, 0, 90, 0.28);
+  border-radius: 14px;
+  background: #FDFAFD;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    border-color: #A566A0;
+    background: #FCF4FB;
+  }
+
+  &.dragging {
+    border-color: #69005A;
+    border-style: solid;
+    background: #F8E9F6;
+  }
+
+  &.filled {
+    border-style: solid;
+    border-color: rgba(105, 0, 90, 0.18);
+    background: #fff;
+  }
+}
+
+.dropzone-input {
+  /* Masqué sans display:none, pour rester focusable au clavier */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dropzone:focus-within {
+  border-color: #69005A;
+  box-shadow: 0 0 0 3px rgba(243, 177, 241, 0.3);
+}
+
+.dropzone-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #F3E6F1;
+  color: #69005A;
+}
+
+.dropzone-preview {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #FCF4FB;
+}
+
+.dropzone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dropzone-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #69005A;
+}
+
+.dropzone-file {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #4A2344;
+  word-break: break-all;
+}
+
+.dropzone-sub {
+  font-size: 0.76rem;
+  color: #8A6A85;
+}
+
+/* Variante compacte pour la ligne d'édition du tableau */
+.dropzone-compact {
+  padding: 0.4rem;
+  gap: 0;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 12px;
+
+  .dropzone-icon,
+  .dropzone-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+  }
+}
+
+// --- Vignette dans le tableau ---
+
+.cell-image {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.row-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #FCF4FB;
+  border: 1px solid rgba(105, 0, 90, 0.1);
+
+  &.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A6A85;
+    font-size: 0.8rem;
+  }
+}
+
+

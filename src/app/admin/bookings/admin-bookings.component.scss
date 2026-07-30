@@ -1,0 +1,103 @@
+@use '../admin-ui' as *;
+
+// --- Confirmation de clôture ---
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-title {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #69005A;
+  margin-bottom: 1.25rem;
+}
+
+.modal-recap {
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: #FCF4FB;
+  margin-bottom: 1.15rem;
+}
+
+.recap-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  font-size: 0.87rem;
+}
+
+.recap-label {
+  color: #7A3A70;
+  flex-shrink: 0;
+}
+
+.recap-value {
+  color: #4A2344;
+  text-align: right;
+  word-break: break-word;
+
+  &.strong {
+    font-weight: 700;
+    color: #69005A;
+  }
+}
+
+/* Ambre : une conséquence à peser, pas une erreur */
+.modal-warning {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  background: #FFF3D6;
+  color: #8A6100;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin-bottom: 0.85rem;
+
+  strong { font-weight: 700; }
+}
+
+.modal-hint {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #8A6A85;
+  margin-bottom: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  .btn-sm { margin-left: 0; }
+}

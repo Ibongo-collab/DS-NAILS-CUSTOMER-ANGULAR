@@ -7,8 +7,8 @@
     <p class="hero-tagline">Prenez rendez-vous en quelques clics</p>
 
     <button class="cta-button" (click)="startBooking()">
-      <app-icon name="calendar" [size]="18"></app-icon>
-      Réserver maintenant
+      <app-icon [name]="isAdmin ? 'grid' : 'calendar'" [size]="18"></app-icon>
+      {{ isAdmin ? 'Consulter les prestations' : 'Réserver maintenant' }}
     </button>
 
     <span class="hero-divider"></span>
@@ -18,8 +18,15 @@
       <div class="info-card">
         <div class="info-body">
           <h3>Horaires</h3>
-          <p>Lundi – Samedi&nbsp;: 9h – 19h</p>
-          <p class="muted">Dimanche&nbsp;: fermé</p>
+          @if (loadingHours) {
+            <p class="muted">Chargement…</p>
+          } @else {
+            @for (group of openingHours; track group.label) {
+              <p [class.muted]="group.closed">{{ group.label }}&nbsp;: {{ group.hours }}</p>
+            } @empty {
+              <p class="muted">Horaires non disponibles</p>
+            }
+          }
         </div>
       </div>
 
@@ -42,8 +49,18 @@
       <div class="info-card">
         <div class="info-body">
           <h3>Contacts</h3>
-          <a class="contact-link" href="mailto:contact@dsnails.com">contact&#64;dsnails.com</a>
-          <a class="contact-link" href="https://instagram.com/dsnails" target="_blank" rel="noopener">&#64;dsnails</a>
+          <a class="contact-link" href="tel:+221778485451">
+            <app-icon name="phone" [size]="17" [strokeWidth]="2" />
+            <span>+221 77 848 54 51</span>
+          </a>
+          <a class="contact-link" href="https://wa.me/242065137136" target="_blank" rel="noopener">
+            <app-icon name="whatsapp" [size]="17" [strokeWidth]="2" />
+            <span>+242 06 513 71 36</span>
+          </a>
+          <a class="contact-link" href="https://www.tiktok.com/@dsnails1?is_from_webapp=1&amp;sender_device=pc" target="_blank" rel="noopener">
+            <app-icon name="tiktok" [size]="17" [strokeWidth]="2" />
+            <span>&#64;dsnails</span>
+          </a>
         </div>
       </div>
     </div>
@@ -67,20 +84,28 @@
       @if (loadingServices) {
         @for (row of skeletonRows; track row) {
           <div class="service-row">
+            <span class="skeleton-thumb"></span>
             <span class="skeleton-line"></span>
-            <span class="skeleton-btn"></span>
+            @if (!isAdmin) {
+              <span class="skeleton-btn"></span>
+            }
           </div>
         }
       } @else {
         @for (service of services; track service.id) {
           <div class="service-row">
+            @if (getServiceImage(service); as image) {
+              <img class="service-thumb" [src]="image" [alt]="service.name" loading="lazy">
+            }
             <div class="service-info">
               <span class="service-title">{{ service.name }}</span>
               <span class="service-meta">{{ serviceMeta(service) }}</span>
             </div>
-            <button class="select-btn" (click)="selectService(service)">
-              Sélectionner
-            </button>
+            @if (!isAdmin) {
+              <button class="select-btn" (click)="selectService(service)">
+                Sélectionner
+              </button>
+            }
           </div>
         } @empty {
           <div class="services-empty">Aucune prestation disponible pour le moment.</div>

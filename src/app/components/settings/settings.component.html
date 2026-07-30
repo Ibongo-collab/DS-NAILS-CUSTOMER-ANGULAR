@@ -1,0 +1,228 @@
+<div class="container">
+  <main class="main-content">
+    <button class="back-link" (click)="goBack()">
+      <app-icon name="arrow-left" [size]="16"></app-icon>
+      Retour
+    </button>
+
+    <h1 class="page-title">Paramètres du compte</h1>
+
+    @if (loading) {
+      <p class="state">Chargement…</p>
+    } @else {
+
+      <!-- Informations personnelles -->
+      <section class="card">
+        <h2 class="card-title">Informations personnelles</h2>
+
+        @if (profileError) {
+          <div class="alert alert-error">{{ profileError }}</div>
+        }
+        @if (profileSuccess) {
+          <div class="alert alert-success">{{ profileSuccess }}</div>
+        }
+
+        <div class="form-group">
+          <label class="form-label" for="full-name">Nom complet</label>
+          <input
+            id="full-name"
+            type="text"
+            class="form-input"
+            [(ngModel)]="fullName"
+            placeholder="Votre nom complet">
+        </div>
+
+        <fieldset class="form-group gender-group">
+          <legend class="form-label">Civilité</legend>
+          <div class="radio-row">
+            <label class="radio-option" [class.checked]="gender === 'femme'">
+              <input type="radio" name="gender" value="femme" [(ngModel)]="gender">
+              <span>Femme</span>
+            </label>
+            <label class="radio-option" [class.checked]="gender === 'homme'">
+              <input type="radio" name="gender" value="homme" [(ngModel)]="gender">
+              <span>Homme</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button class="btn btn-primary" [disabled]="!canSaveProfile" (click)="saveProfile()">
+            {{ savingProfile ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+          @if (profileDirty) {
+            <button class="btn btn-secondary" (click)="resetProfile()">Annuler</button>
+          }
+        </div>
+      </section>
+
+      <!-- Adresse email -->
+      <section class="card">
+        <h2 class="card-title">Adresse email</h2>
+
+        <p class="current-email">
+          Adresse actuelle : <strong>{{ currentEmail }}</strong>
+        </p>
+
+        @if (emailError) {
+          <div class="alert alert-error">{{ emailError }}</div>
+        }
+
+        <div class="form-group">
+          <label class="form-label" for="new-email">Nouvelle adresse e-mail</label>
+          <input
+            id="new-email"
+            type="email"
+            class="form-input"
+            [class.input-error]="emailError"
+            [(ngModel)]="newEmail"
+            (blur)="onNewEmailBlur()"
+            placeholder="nouvelle@adresse.com">
+          @if (checkingEmail) {
+            <span class="field-hint">Vérification…</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm-email">Confirmer la nouvelle adresse</label>
+          <input
+            id="confirm-email"
+            type="email"
+            class="form-input"
+            [class.input-error]="confirmEmailError"
+            [(ngModel)]="confirmEmail"
+            (blur)="onConfirmEmailBlur()"
+            placeholder="Saisissez à nouveau l'adresse">
+          @if (confirmEmailError) {
+            <span class="field-error">{{ confirmEmailError }}</span>
+          }
+        </div>
+
+        <p class="email-notice">
+          Un code de validation sera envoyé à cette adresse. Vous serez déconnecté,
+          puis invité à saisir ce code pour finaliser le changement.
+        </p>
+
+        <div class="actions">
+          <button class="btn btn-primary" [disabled]="!canChangeEmail" (click)="changeEmail()">
+            {{ savingEmail ? 'Envoi…' : 'Envoyer le lien de confirmation' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Mot de passe -->
+      <section class="card">
+        <h2 class="card-title">Mot de passe</h2>
+
+        <div class="form-group">
+          <label class="form-label" for="current-password">Mot de passe actuel</label>
+          <div class="password-wrap">
+            <!-- Champ volontairement exclu du remplissage automatique : la saisie
+                 doit prouver que la personne connaît le mot de passe actuel -->
+            <input
+              id="current-password"
+              [type]="showCurrentPassword ? 'text' : 'password'"
+              class="form-input"
+              name="ds-current-password"
+              autocomplete="off"
+              data-lpignore="true"
+              data-1p-ignore
+              data-bwignore
+              placeholder="Ancien mot de passe"
+              [(ngModel)]="currentPassword"
+              (ngModelChange)="passwordError = ''">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showCurrentPassword = !showCurrentPassword"
+              [attr.aria-label]="showCurrentPassword ? 'Cacher le mot de passe' : 'Afficher le mot de passe'">
+              {{ showCurrentPassword ? 'Cacher' : 'Afficher' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new-password">Nouveau mot de passe</label>
+          <div class="password-wrap">
+            <input
+              id="new-password"
+              [type]="showNewPassword ? 'text' : 'password'"
+              class="form-input"
+              autocomplete="new-password"
+              placeholder="Nouveau mot de passe"
+              [(ngModel)]="newPassword"
+              (ngModelChange)="passwordError = ''">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showNewPassword = !showNewPassword"
+              [attr.aria-label]="showNewPassword ? 'Cacher le mot de passe' : 'Afficher le mot de passe'">
+              {{ showNewPassword ? 'Cacher' : 'Afficher' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm-password">Confirmer le nouveau mot de passe</label>
+          <div class="password-wrap">
+            <input
+              id="confirm-password"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              class="form-input"
+              [class.input-error]="confirmPassword && !passwordsMatch"
+              autocomplete="new-password"
+              placeholder="Confirmation du nouveau mot de passe"
+              [(ngModel)]="confirmPassword"
+              (ngModelChange)="passwordError = ''">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showConfirmPassword = !showConfirmPassword"
+              [attr.aria-label]="showConfirmPassword ? 'Cacher le mot de passe' : 'Afficher le mot de passe'">
+              {{ showConfirmPassword ? 'Cacher' : 'Afficher' }}
+            </button>
+          </div>
+          @if (confirmPassword && !passwordsMatch) {
+            <span class="field-error">Les deux mots de passe ne correspondent pas.</span>
+          }
+        </div>
+
+        <ul class="pwd-checks">
+          <li class="pwd-check" [class.valid]="pwdChecks.length">
+            <span class="check-icon">
+              <app-icon [name]="pwdChecks.length ? 'check' : 'x'" [size]="14"></app-icon>
+            </span>
+            8 caractères minimum
+          </li>
+          <li class="pwd-check" [class.valid]="pwdChecks.uppercase">
+            <span class="check-icon">
+              <app-icon [name]="pwdChecks.uppercase ? 'check' : 'x'" [size]="14"></app-icon>
+            </span>
+            1 lettre majuscule (A-Z)
+          </li>
+          <li class="pwd-check" [class.valid]="pwdChecks.special">
+            <span class="check-icon">
+              <app-icon [name]="pwdChecks.special ? 'check' : 'x'" [size]="14"></app-icon>
+            </span>
+            1 caractère spécial (!&#64;#$%...)
+          </li>
+        </ul>
+
+        @if (passwordError) {
+          <div class="alert alert-error">{{ passwordError }}</div>
+        }
+
+        <div class="actions">
+          <button class="btn btn-primary" [disabled]="!canChangePassword" (click)="changePassword()">
+            {{ savingPassword ? 'Modification…' : 'Modifier le mot de passe' }}
+          </button>
+        </div>
+
+        <p class="password-notice">
+          Une fois le mot de passe modifié, vous serez déconnecté et devrez vous
+          reconnecter avec le nouveau.
+        </p>
+      </section>
+    }
+  </main>
+</div>

@@ -1,0 +1,173 @@
+@if (error) {
+  <div class="alert alert-error">{{ error }}</div>
+}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Ajouter une prestation</h2>
+  </div>
+  <div class="panel-body">
+    <div class="field-grid">
+      <div class="field">
+        <label for="new-name">Nom</label>
+        <input id="new-name" type="text" [(ngModel)]="newDraft.name" placeholder="Manucure sur capsule">
+      </div>
+      <div class="field">
+        <label for="new-duration">Durée (min)</label>
+        <input id="new-duration" type="number" min="5" step="5" [(ngModel)]="newDraft.duration_minutes">
+      </div>
+      <div class="field">
+        <label for="new-price">Prix (FCFA)</label>
+        <input id="new-price" type="number" min="0" step="500" [(ngModel)]="newDraft.price">
+      </div>
+      <button class="btn-sm btn-primary-sm" [disabled]="!canCreate || creating" (click)="create()">
+        {{ creating ? 'Ajout…' : 'Ajouter' }}
+      </button>
+    </div>
+
+    <div class="image-field">
+      <span class="image-label">Photo de la prestation</span>
+
+      <label
+        class="dropzone"
+        [class.dragging]="draggingNew"
+        [class.filled]="newImage.preview"
+        (dragover)="onDragOver($event, 'new')"
+        (dragleave)="onDragLeave($event, 'new')"
+        (drop)="onDrop($event, 'new')">
+
+        <input
+          class="dropzone-input"
+          type="file"
+          [attr.accept]="imageAccept"
+          (change)="onNewImageSelected($event)">
+
+        @if (newImage.preview) {
+          <img class="dropzone-preview" [src]="newImage.preview" alt="Aperçu de la photo">
+          <div class="dropzone-text">
+            <span class="dropzone-file">{{ fileLabel(newImage) }}</span>
+            <span class="dropzone-sub">Cliquez ou déposez pour remplacer</span>
+          </div>
+        } @else {
+          <span class="dropzone-icon"><app-icon name="image" [size]="30"></app-icon></span>
+          <div class="dropzone-text">
+            <span class="dropzone-title">Déposez une photo ou cliquez pour parcourir</span>
+            <span class="dropzone-sub">JPG ou PNG — {{ maxImageMb }} Mo maximum</span>
+          </div>
+        }
+      </label>
+
+      @if (newImage.file) {
+        <button class="btn-sm" (click)="clearNewImage()">Retirer la photo</button>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Prestations</h2>
+    <button class="btn-sm" (click)="load()" [disabled]="loading">Actualiser</button>
+  </div>
+
+  @if (loading) {
+    <div class="state">Chargement des prestations…</div>
+  } @else {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Photo</th>
+            <th>Nom</th>
+            <th>Durée</th>
+            <th>Prix</th>
+            <th>État</th>
+            <th class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (service of services; track service.id) {
+            @if (editingId === service.id) {
+              <tr>
+                <td class="cell-image">
+                  <label
+                    class="dropzone dropzone-compact"
+                    [class.dragging]="draggingEdit"
+                    [class.filled]="editImage.preview || editCurrentImageUrl"
+                    (dragover)="onDragOver($event, 'edit')"
+                    (dragleave)="onDragLeave($event, 'edit')"
+                    (drop)="onDrop($event, 'edit')">
+
+                    <input
+                      class="dropzone-input"
+                      type="file"
+                      [attr.accept]="imageAccept"
+                      (change)="onEditImageSelected($event)">
+
+                    @if (editImage.preview) {
+                      <img class="dropzone-preview" [src]="editImage.preview" alt="Nouvelle photo">
+                    } @else if (editCurrentImageUrl) {
+                      <img class="dropzone-preview" [src]="editCurrentImageUrl" [alt]="service.name">
+                    } @else {
+                      <span class="dropzone-icon"><app-icon name="image" [size]="22"></app-icon></span>
+                    }
+                  </label>
+
+                  @if (editImage.file) {
+                    <button class="btn-sm" (click)="clearEditImage()">Annuler</button>
+                  }
+                </td>
+                <td><input type="text" [(ngModel)]="editDraft.name"></td>
+                <td><input type="number" min="5" step="5" [(ngModel)]="editDraft.duration_minutes"></td>
+                <td><input type="number" min="0" step="500" [(ngModel)]="editDraft.price"></td>
+                <td>—</td>
+                <td class="cell-actions">
+                  <button
+                    class="btn-sm btn-primary-sm"
+                    [disabled]="!canSaveEdit || busyId === service.id"
+                    (click)="saveEdit(service)">
+                    Enregistrer
+                  </button>
+                  <button class="btn-sm" (click)="cancelEdit()">Annuler</button>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td>
+                  @if (service.image_url) {
+                    <img class="row-thumb" [src]="service.image_url" [alt]="service.name" loading="lazy">
+                  } @else {
+                    <span class="row-thumb empty">—</span>
+                  }
+                </td>
+                <td class="cell-strong">{{ service.name }}</td>
+                <td>{{ formatDuration(service.duration_minutes) }}</td>
+                <td>{{ service.price }} FCFA</td>
+                <td>
+                  <span class="badge" [class]="service.active ? 'badge badge-active' : 'badge badge-inactive'">
+                    {{ service.active ? 'Visible' : 'Masquée' }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  <button class="btn-sm" [disabled]="busyId === service.id" (click)="startEdit(service)">
+                    Modifier
+                  </button>
+                  <button class="btn-sm" [disabled]="busyId === service.id" (click)="toggleActive(service)">
+                    {{ service.active ? 'Masquer' : 'Afficher' }}
+                  </button>
+                  <button class="btn-sm btn-danger" [disabled]="busyId === service.id" (click)="remove(service)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="6" class="state">Aucune prestation enregistrée.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

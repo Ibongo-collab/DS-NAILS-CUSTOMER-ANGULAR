@@ -1,0 +1,304 @@
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.main-content {
+  padding: 2rem 1.5rem 3rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 1.25rem;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7A3A70;
+  cursor: pointer;
+
+  &:hover { color: #69005A; }
+}
+
+.page-title {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: #69005A;
+  margin-bottom: 1.75rem;
+}
+
+.state {
+  padding: 2rem 0;
+  text-align: center;
+  color: #8A8088;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid rgba(105, 0, 90, 0.1);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #69005A;
+  margin-bottom: 1.25rem;
+}
+
+.current-email {
+  font-size: 0.9rem;
+  color: #52514e;
+  margin-bottom: 1.25rem;
+
+  strong { color: #69005A; font-weight: 600; word-break: break-word; }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #2A2A2A;
+}
+
+.form-input {
+  padding: 0.875rem;
+  border: 1px solid #E2E2E2;
+  border-radius: 8px;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #69005A;
+  }
+
+  &.input-error {
+    border-color: #c0392b;
+    background: #fff5f5;
+  }
+
+  // Distingue clairement l'indication de la valeur réellement saisie
+  &::placeholder {
+    color: #A79BA4;
+    opacity: 1;
+  }
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #8A8088;
+}
+
+// --- Civilité ---
+
+.gender-group {
+  border: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+}
+
+.gender-group legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.radio-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.radio-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #E2E2E2;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover { border-color: #69005A; }
+
+  &.checked {
+    border-color: #69005A;
+    background: #FCF4FB;
+    font-weight: 600;
+    color: #69005A;
+  }
+
+  input[type='radio'] {
+    width: 17px;
+    height: 17px;
+    accent-color: #69005A;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  &:focus-within {
+    border-color: #69005A;
+    box-shadow: 0 0 0 3px rgba(243, 177, 241, 0.3);
+  }
+}
+
+// --- Alertes ---
+
+.alert {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.alert-error   { background: #ffebee; color: #c0392b; }
+.alert-success { background: #E1F5E7; color: #1F6B3A; }
+.alert-info    { background: #FCF4FB; color: #69005A; }
+
+.alert-detail {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+
+.email-notice {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  background: #FCF4FB;
+  color: #69005A;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #c0392b;
+}
+
+// --- Mot de passe ---
+
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .form-input {
+    flex: 1;
+    padding-right: 5.25rem;
+  }
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.35rem;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7A3A70;
+  cursor: pointer;
+
+  &:hover { color: #69005A; }
+}
+
+.pwd-checks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.pwd-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  color: #8A8088;
+  transition: color 0.2s;
+
+  &.valid { color: #1F6B3A; }
+}
+
+.check-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.password-notice {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #8A6A85;
+}
+
+// --- Boutons ---
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #F3B1F1 0%, #F8CFF6 100%);
+  color: #69005A;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(243, 177, 241, 0.35);
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-secondary {
+  background: #EBD7E9;
+  color: #69005A;
+
+  &:hover { background: #FCF4FB; }
+}
+
+@media (max-width: 560px) {
+  .main-content { padding: 1.5rem 1rem 2.5rem; }
+  .page-title { font-size: 1.5rem; }
+  .radio-row { flex-direction: column; }
+}

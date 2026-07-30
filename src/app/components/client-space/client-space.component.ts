@@ -4,16 +4,20 @@ import { AuthService } from '../../services/auth.service';
 import { BookingService } from '../../services/booking.service';
 import { Booking } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
+import { DurationPipe } from '../../pipes/duration.pipe';
+import { TimePipe } from '../../pipes/time.pipe';
 
 @Component({
   selector: 'app-client-space',
   standalone: true,
-  imports: [IconComponent],
+  imports: [IconComponent, DurationPipe, TimePipe],
   templateUrl: './client-space.component.html',
   styleUrls: ['./client-space.component.scss']
 })
 export class ClientSpaceComponent implements OnInit {
   loading = true;
+  /** Un administrateur ne réserve pas : son espace se limite à son compte. */
+  isAdmin = false;
   upcomingBookings: Booking[] = [];
   pastBookings: Booking[] = [];
   userName = '';
@@ -51,20 +55,35 @@ export class ClientSpaceComponent implements OnInit {
     }
 
     this.userName = this.authService.getUserName();
-    this.loadBookings();
+
+    this.authService.isAdmin$.subscribe(isAdmin => {
+      if (isAdmin === undefined) return; // rôle pas encore résolu
+
+      this.isAdmin = isAdmin;
+
+      // Inutile d'interroger la base pour des réservations qui ne seront pas affichées
+      if (isAdmin) {
+        this.loading = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      this.loadBookings();
+    });
   }
 
   async loadBookings(showSpinner = true): Promise<void> {
     if (showSpinner) this.loading = true;
     const email = this.authService.getUserEmail();
+    const userId = this.authService.currentUser?.id ?? '';
 
-    if (!email) {
+    if (!email && !userId) {
       this.loading = false;
       this.cdr.detectChanges();
       return;
     }
 
-    const bookings = await this.bookingService.getBookingsByEmail(email);
+    const bookings = await this.bookingService.getMyBookings(userId, email);
 
     this.upcomingBookings = bookings.filter(b =>
       ['pending', 'confirmed'].includes(b.status)
@@ -145,5 +164,9 @@ export class ClientSpaceComponent implements OnInit {
 
   newBooking(): void {
     this.router.navigate(['/service']);
+  }
+
+  goToSettings(): void {
+    this.router.navigate(['/parametres']);
   }
 }

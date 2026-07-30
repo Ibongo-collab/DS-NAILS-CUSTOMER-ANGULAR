@@ -2,12 +2,17 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { BookingService } from '../../services/booking.service';
 import { IconComponent } from '../shared/icon/icon.component';
+import { DateAvailability } from '../../models/booking.model';
 
 interface DateOption {
   date: string;
   label: string;
   dayName: string;
   isToday: boolean;
+  available: boolean;
+  /** Motif affiché quand la date n'est pas réservable */
+  unavailableLabel: string;
+  slots: number;
 }
 
 @Component({
@@ -41,11 +46,44 @@ export class DateSelectionComponent implements OnInit {
       this.selectedDate = currentState.selectedDate;
     }
 
-    Promise.resolve().then(() => {
-      this.generateDateOptions();
-      this.loading = false;
-      this.cdr.detectChanges();
-    });
+    this.loadDates(currentState.selectedService.id);
+  }
+
+  private async loadDates(serviceId: string): Promise<void> {
+    this.generateDateOptions();
+
+    const availability = await this.bookingService.getDatesAvailability(
+      this.dateOptions.map(option => option.date),
+      serviceId
+    );
+
+    this.applyAvailability(availability);
+
+    // Une date pré-sélectionnée peut avoir été bloquée entre-temps
+    if (this.selectedDate && !this.dateOptions.find(o => o.date === this.selectedDate)?.available) {
+      this.selectedDate = null;
+    }
+
+    this.loading = false;
+    this.cdr.detectChanges();
+  }
+
+  private applyAvailability(availability: Map<string, DateAvailability>): void {
+    const labels: Record<string, string> = {
+      closed: 'Fermé',
+      blocked: 'Indisponible',
+      full: 'Complet'
+    };
+
+    for (const option of this.dateOptions) {
+      const info = availability.get(option.date);
+      // Sans information (requête en échec), on laisse la date sélectionnable
+      if (!info) continue;
+
+      option.available = info.available;
+      option.slots = info.slots;
+      option.unavailableLabel = info.reason ? labels[info.reason] : '';
+    }
   }
 
   generateDateOptions(): void {
@@ -71,15 +109,20 @@ export class DateSelectionComponent implements OnInit {
         date: dateString,
         label,
         dayName: i < 2 ? dayLabel : '',
-        isToday: i === 0
+        isToday: i === 0,
+        // Optimiste par défaut : la disponibilité réelle arrive juste après
+        available: true,
+        unavailableLabel: '',
+        slots: 0
       });
     }
 
     this.dateOptions = options;
   }
 
-  selectDate(date: string): void {
-    this.selectedDate = date;
+  selectDate(option: DateOption): void {
+    if (!option.available) return;
+    this.selectedDate = option.date;
   }
 
   continue(): void {

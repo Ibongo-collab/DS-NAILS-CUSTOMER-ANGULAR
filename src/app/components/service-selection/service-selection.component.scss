@@ -74,10 +74,19 @@
   }
 }
 
-.service-icon {
-  font-size: 2rem;
-  min-width: 50px;
-  text-align: center;
+/* Réserve la place de la vignette pour qu'une carte sans photo
+   ne décale pas les autres */
+.service-image-empty {
+  background: #EBD7E9;
+}
+
+.service-image {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #EBD7E9;
 }
 
 .service-info {

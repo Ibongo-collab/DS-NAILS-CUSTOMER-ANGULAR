@@ -57,6 +57,7 @@ CREATE TABLE bookings (
     status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'confirmed', 'cancelled', 'completed'
     whatsapp_notification BOOLEAN DEFAULT false,
     notes TEXT,
+    price_at_booking DECIMAL(10,2), -- tarif figé à la création (cf. supabase-price-at-booking.sql)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() + INTERVAL '10 minutes'

@@ -3,16 +3,22 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
-import { PasswordResetModalComponent } from '../shared/password-reset-modal/password-reset-modal.component';
+import { EmailConfirmationModalComponent } from '../shared/email-confirmation-modal/email-confirmation-modal.component';
 import { IconComponent } from '../shared/icon/icon.component';
 import { isValidPhone, normalizePhone, PHONE_ERROR_MESSAGE } from '../../validators/phone.validator';
+import { Gender } from '../../models/profile.model';
 
 type AuthTab = 'login' | 'register';
 
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [FormsModule, PhoneInputComponent, PasswordResetModalComponent, IconComponent],
+  imports: [
+    FormsModule,
+    PhoneInputComponent,
+    EmailConfirmationModalComponent,
+    IconComponent
+  ],
   templateUrl: './auth.component.html',
   styleUrls: ['./auth.component.scss']
 })
@@ -23,9 +29,12 @@ export class AuthComponent implements OnInit {
   loginEmailError = '';
   loginPassword = '';
   showLoginPassword = false;
-  showResetModal = false;
+  showEmailConfirmationModal = false;
+  registeredEmail = '';
 
   regName = '';
+  regGender: Gender | null = null;
+  regGenderError = '';
   regPhone = '';
   regEmail = '';
   regPassword = '';
@@ -50,6 +59,20 @@ export class AuthComponent implements OnInit {
     const tab = this.route.snapshot.queryParamMap.get('tab');
     if (tab === 'register' || tab === 'login') {
       this.activeTab = tab;
+    }
+
+    const reason = this.route.snapshot.queryParamMap.get('reason');
+
+    if (reason === 'email-change') {
+      this.successMessage =
+        'Session fermée par sécurité. Confirmez le code reçu par email pour activer '
+        + 'votre nouvelle adresse, puis reconnectez-vous.';
+    } else if (reason === 'session-expired') {
+      this.error = 'Votre session a expiré. Reconnectez-vous pour poursuivre.';
+    } else if (reason === 'session-timeout') {
+      this.error =
+        'Votre session a duré plus de 24 heures et a été fermée par sécurité. '
+        + 'Reconnectez-vous pour continuer.';
     }
   }
 
@@ -130,6 +153,9 @@ export class AuthComponent implements OnInit {
   }
 
   async register(): Promise<void> {
+    this.regGenderError = this.regGender ? '' : 'Veuillez sélectionner une civilité.';
+    if (this.regGenderError) return;
+
     if (!isValidPhone(this.regPhone.trim())) {
       this.regPhoneError = PHONE_ERROR_MESSAGE;
       return;
@@ -145,22 +171,40 @@ export class AuthComponent implements OnInit {
       this.regName,
       normalizePhone(this.regPhone.trim()),
       this.regEmail.trim(),
-      this.regPassword
+      this.regPassword,
+      this.regGender!
     );
 
     this.loading = false;
     if (result.success) {
+      // Conservé avant la remise à zéro : le modal rappelle l'adresse à consulter
+      this.registeredEmail = this.regEmail.trim();
+
       this.regName = '';
+      this.regGender = null;
       this.regPhone = '';
       this.regEmail = '';
       this.regPassword = '';
       this.showRegPassword = false;
-      this.successMessage = 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.';
-      this.setTab('login');
+
+      this.showEmailConfirmationModal = true;
     } else {
       this.error = result.error || 'Une erreur est survenue.';
     }
     this.cdr.detectChanges();
+  }
+
+  /** Le basculement vers l'onglet de connexion attend la fermeture du modal. */
+  closeEmailConfirmationModal(): void {
+    this.showEmailConfirmationModal = false;
+    this.setTab('login');
+    this.successMessage =
+      'Compte créé. Confirmez votre adresse e-mail avant de vous connecter.';
+    this.cdr.detectChanges();
+  }
+
+  goToForgotPassword(): void {
+    this.router.navigate(['/mot-de-passe-oublie']);
   }
 
   goHome(): void {

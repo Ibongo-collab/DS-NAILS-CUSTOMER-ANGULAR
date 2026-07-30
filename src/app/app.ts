@@ -1,11 +1,11 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { RouterOutlet, RouterLink, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="navbar">
       <div class="navbar-inner">
@@ -15,7 +15,16 @@ import { AuthService } from './services/auth.service';
 
         <nav class="nav-links">
           @if (isAuthenticated) {
-            <a class="nav-link" routerLink="/mon-espace">Mon espace</a>
+            @if (isAdmin) {
+              <a
+                class="nav-link nav-link-admin"
+                routerLink="/admin"
+                routerLinkActive="active">Admin</a>
+            }
+            <a
+              class="nav-link"
+              routerLink="/mon-espace"
+              [class.active]="isClientSpaceActive">Mon espace</a>
           } @else {
             <a class="nav-link" routerLink="/auth" [queryParams]="{ tab: 'register' }">S'inscrire</a>
             <a class="nav-link" routerLink="/auth" [queryParams]="{ tab: 'login' }">Connexion</a>
@@ -106,12 +115,35 @@ import { AuthService } from './services/auth.service';
       transition: width 0.25s ease;
     }
 
-    .nav-link:hover {
+    .nav-link:hover,
+    .nav-link.active {
       color: var(--link-hover);
     }
 
-    .nav-link:hover::after {
+    /* Le soulignement du survol sert aussi de marqueur de page courante */
+    .nav-link:hover::after,
+    .nav-link.active::after {
       width: 100%;
+    }
+
+    .nav-link-admin {
+      color: #69005A;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid rgba(105, 0, 90, 0.25);
+      border-radius: 999px;
+    }
+
+    /* La pastille Admin porte l'état actif par son fond, pas par un soulignement */
+    .nav-link-admin::after { display: none; }
+
+    .nav-link-admin:hover,
+    .nav-link-admin.active {
+      background: #FCF4FB;
+      border-color: #69005A;
+    }
+
+    .nav-link-admin.active {
+      background: #F8CFF6;
     }
 
     .app-footer {
@@ -147,6 +179,16 @@ import { AuthService } from './services/auth.service';
 export class App implements OnInit {
   title = 'DS Nails';
   isAuthenticated = false;
+  isAdmin = false;
+
+  /**
+   * « Mon espace » reste actif sur /parametres : les paramètres sont désormais
+   * une sous-page de l'espace client, pas une destination indépendante.
+   */
+  get isClientSpaceActive(): boolean {
+    const path = this.router.url.split(/[?#]/)[0];
+    return path.startsWith('/mon-espace') || path.startsWith('/parametres');
+  }
 
   constructor(
     private authService: AuthService,
@@ -157,6 +199,20 @@ export class App implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.isAuthenticated = !!user;
+      this.cdr.detectChanges();
+    });
+
+    this.authService.isAdmin$.subscribe(isAdmin => {
+      this.isAdmin = isAdmin === true;
+      this.cdr.detectChanges();
+    });
+
+    // Session arrivée au bout de ses 24 h : on sort l'utilisateur de l'écran
+    // où il se trouve, sinon il resterait devant une interface qui le croit connecté
+    this.authService.sessionExpired$.subscribe(() => {
+      this.router.navigate(['/auth'], {
+        queryParams: { tab: 'login', reason: 'session-timeout' }
+      });
       this.cdr.detectChanges();
     });
   }

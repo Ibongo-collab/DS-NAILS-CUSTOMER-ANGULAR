@@ -1,0 +1,215 @@
+// Styles partagés par les écrans d'administration.
+// Les styles de composants Angular étant encapsulés, chaque écran fait
+// `@use '../admin-ui' as *;` pour en hériter.
+
+.panel {
+  background: #fff;
+  border: 1px solid rgba(105, 0, 90, 0.1);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid rgba(105, 0, 90, 0.08);
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #69005A;
+  }
+}
+
+.panel-body { padding: 1.35rem; }
+
+// --- Statistiques ---
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.stat-card {
+  background: #FCF4FB;
+  border: 1px solid rgba(105, 0, 90, 0.08);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+
+.stat-value {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: #69005A;
+  line-height: 1.1;
+}
+
+.stat-label {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #7A3A70;
+}
+
+// --- Tableaux ---
+
+.table-scroll { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+th {
+  text-align: left;
+  padding: 0.8rem 1.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #7A3A70;
+  background: #FCF4FB;
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.85rem 1.1rem;
+  border-top: 1px solid rgba(105, 0, 90, 0.07);
+  color: #4A2344;
+  vertical-align: middle;
+}
+
+tbody tr:hover { background: rgba(243, 177, 241, 0.05); }
+
+.cell-strong { font-weight: 600; color: #69005A; }
+.cell-muted { color: #8A6A85; font-size: 0.82rem; }
+.cell-actions { white-space: nowrap; text-align: right; }
+
+// --- Badges de statut ---
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.badge-pending   { background: #FFF3D6; color: #8A6100; }
+.badge-confirmed { background: #E1F5E7; color: #1F6B3A; }
+.badge-completed { background: #EAE6F5; color: #4B3A80; }
+.badge-cancelled { background: #FBE3E3; color: #A03030; }
+.badge-active    { background: #E1F5E7; color: #1F6B3A; }
+.badge-inactive  { background: #EFE7EE; color: #7A3A70; }
+
+// --- Boutons ---
+
+.btn-sm {
+  padding: 0.42rem 0.8rem;
+  margin-left: 0.35rem;
+  border: 1px solid rgba(105, 0, 90, 0.18);
+  border-radius: 7px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #69005A;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+
+  &:hover:not(:disabled) { background: #FCF4FB; border-color: #69005A; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.btn-danger {
+  color: #A03030;
+  border-color: rgba(160, 48, 48, 0.25);
+
+  &:hover:not(:disabled) { background: #FBE3E3; border-color: #A03030; }
+}
+
+.btn-primary-sm {
+  background: linear-gradient(135deg, #F3B1F1 0%, #F8CFF6 100%);
+  border-color: transparent;
+
+  &:hover:not(:disabled) { background: linear-gradient(135deg, #F8CFF6 0%, #F3B1F1 100%); }
+}
+
+// --- Formulaires ---
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.9rem;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #7A3A70;
+}
+
+input,
+select {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(105, 0, 90, 0.18);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: #4A2344;
+  background: #fff;
+
+  &:focus {
+    outline: none;
+    border-color: #F3B1F1;
+    box-shadow: 0 0 0 3px rgba(243, 177, 241, 0.25);
+  }
+}
+
+// --- États ---
+
+.state {
+  padding: 2rem 1.35rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #8A6A85;
+}
+
+.alert {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.alert-error   { background: #FBE3E3; color: #A03030; }
+.alert-success { background: #E1F5E7; color: #1F6B3A; }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}

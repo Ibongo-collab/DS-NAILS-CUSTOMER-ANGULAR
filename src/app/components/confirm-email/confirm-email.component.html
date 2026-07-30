@@ -1,0 +1,101 @@
+<div class="container">
+  <main class="main-content">
+    @if (confirmed) {
+
+      <div class="card success-card">
+        <div class="success-icon"><app-icon name="check-circle" [size]="46"></app-icon></div>
+        <h1 class="page-title">Adresse e-mail mise à jour</h1>
+        <p class="lead">
+          Votre adresse est désormais <strong>{{ pendingEmail }}</strong>.
+        </p>
+        <p class="detail">
+          Reconnectez-vous avec cette nouvelle adresse. Votre mot de passe reste inchangé.
+        </p>
+        <button class="btn btn-primary" (click)="goToLogin()">Se connecter</button>
+      </div>
+
+    } @else {
+
+      <div class="card">
+        <div class="mail-icon"><app-icon name="mail" [size]="42"></app-icon></div>
+        <h1 class="page-title">Confirmez votre nouvelle adresse</h1>
+
+        @if (pendingEmail) {
+          <p class="lead">
+            Nous avons envoyé un code de validation à
+            <strong>{{ pendingEmail }}</strong>.
+          </p>
+          <p class="detail">
+            Saisissez-le ci-dessous pour finaliser le changement. Tant que ce n'est pas
+            fait, votre ancienne adresse reste celle de connexion.
+          </p>
+
+          <div class="code-field">
+            <span class="form-label" id="code-label">Code de validation</span>
+
+            <div class="code-boxes" role="group" aria-labelledby="code-label">
+              @for (digit of digits; track $index) {
+                <input
+                  #codeBox
+                  type="text"
+                  inputmode="numeric"
+                  [attr.autocomplete]="$index === 0 ? 'one-time-code' : 'off'"
+                  class="code-box"
+                  [class.input-error]="error"
+                  [class.filled]="digit"
+                  maxlength="1"
+                  [value]="digit"
+                  (input)="onDigitInput($index, $event)"
+                  (keydown)="onDigitKeydown($index, $event)"
+                  (paste)="onDigitPaste($index, $event)"
+                  (focus)="$any($event.target).select()"
+                  [attr.aria-label]="'Chiffre ' + ($index + 1) + ' sur ' + codeLength">
+              }
+            </div>
+          </div>
+
+          @if (codeExpired) {
+            <div class="alert alert-error">
+              Ce code a expiré. Demandez-en un nouveau ci-dessous.
+            </div>
+          } @else if (codeExpiresIn !== null) {
+            <p class="expiry">Code valable encore <strong>{{ expiryLabel }}</strong></p>
+          }
+
+          @if (error) {
+            <div class="alert alert-error">{{ error }}</div>
+          }
+          @if (resendNotice) {
+            <div class="alert alert-success">{{ resendNotice }}</div>
+          }
+
+          <button class="btn btn-primary" [disabled]="!canSubmit" (click)="submit()">
+            {{ loading ? 'Vérification…' : 'Valider' }}
+          </button>
+
+          <p class="resend-row">
+            @if (resending) {
+              <span class="resend-state">Envoi en cours…</span>
+            } @else if (resendCooldown > 0) {
+              <span class="resend-state">
+                Nouveau renvoi possible dans {{ resendCooldown }} s
+              </span>
+            } @else {
+              <button type="button" class="resend-link" (click)="resend()">
+                Renvoyer le code
+              </button>
+            }
+          </p>
+
+          <p class="footnote">
+            Vous ne trouvez pas le message ? Vérifiez vos courriers indésirables.
+          </p>
+        } @else {
+          <div class="alert alert-error">{{ error }}</div>
+          <button class="btn btn-primary" (click)="goToLogin()">Aller à la connexion</button>
+        }
+      </div>
+
+    }
+  </main>
+</div>

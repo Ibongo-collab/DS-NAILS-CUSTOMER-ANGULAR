@@ -1,0 +1,35 @@
+<div class="modal-overlay">
+  <div
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-email-title">
+    <button type="button" class="modal-close" (click)="close()" aria-label="Fermer">×</button>
+
+    <div class="success-state">
+      <div class="success-icon"><app-icon name="mail" [size]="44"></app-icon></div>
+
+      <h3 class="modal-title" id="confirm-email-title">Confirmez votre adresse e-mail</h3>
+
+      <p class="modal-desc">
+        Votre compte a bien été créé. Nous venons de vous envoyer un e-mail
+        @if (email) {
+          à <strong class="email">{{ email }}</strong>
+        }
+        : ouvrez-le et suivez les instructions pour activer votre compte.
+      </p>
+
+      <p class="modal-warning">
+        Tant que votre adresse n'est pas confirmée, la connexion sera refusée.
+      </p>
+
+      <p class="modal-hint">
+        Vous ne trouvez pas le message ? Pensez à vérifier vos courriers indésirables.
+      </p>
+
+      <button type="button" class="btn btn-primary" (click)="close()">
+        J'ai compris
+      </button>
+    </div>
+  </div>
+</div>

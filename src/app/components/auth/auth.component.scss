@@ -157,6 +157,60 @@
   margin-top: 0.25rem;
 }
 
+// --- Civilité ---
+
+.gender-group {
+  border: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+}
+
+.gender-group legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.radio-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.radio-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #E2E2E2;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover { border-color: #69005A; }
+
+  &.checked {
+    border-color: #69005A;
+    background: #FCF4FB;
+    font-weight: 600;
+    color: #69005A;
+  }
+
+  input[type='radio'] {
+    width: 17px;
+    height: 17px;
+    accent-color: #69005A;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  &:focus-within {
+    border-color: #69005A;
+    box-shadow: 0 0 0 3px rgba(243, 177, 241, 0.3);
+  }
+}
+
 .input-wrap {
   position: relative;
   display: flex;

@@ -1,0 +1,372 @@
+@if (loading) {
+  <div class="state">Calcul des statistiques…</div>
+} @else {
+
+  <!-- Chiffre du mois : le seul chiffre héros de la vue -->
+  <div class="panel hero-panel">
+    <div class="panel-body hero-body">
+      <div>
+        <p class="hero-label">Chiffre d'affaires du mois en cours</p>
+        <p class="hero-figure">{{ money(stats.revenueCurrentMonth) }}</p>
+        @if (monthDelta !== null) {
+          <p class="hero-delta" [class.up]="monthDelta >= 0" [class.down]="monthDelta < 0">
+            <span aria-hidden="true">{{ monthDelta >= 0 ? '▲' : '▼' }}</span>
+            {{ signedPercent(monthDelta) }} par rapport au mois précédent
+            ({{ money(stats.revenuePreviousMonth) }})
+          </p>
+        } @else {
+          <p class="hero-delta muted">Pas de mois précédent pour comparer.</p>
+        }
+      </div>
+      <button class="btn-sm" [disabled]="refreshing" (click)="refresh()">
+        {{ refreshing ? 'Actualisation…' : 'Actualiser' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicateurs -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ money(stats.revenueTotal) }}</div>
+      <div class="stat-label">CA cumulé</div>
+      <p class="stat-note">Prestations terminées uniquement</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ money(stats.averageBasket) }}</div>
+      <div class="stat-label">Panier moyen</div>
+      <p class="stat-note">CA cumulé ÷ {{ stats.completedCount }} prestation(s)</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.completedCount }}</div>
+      <div class="stat-label">Réservations terminées</div>
+      <p class="stat-note">
+        {{ stats.honoredCount - stats.completedCount }} confirmée(s), pas encore terminée(s)
+      </p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ clients.totalVerified }}</div>
+      <div class="stat-label">Clients inscrits</div>
+      <p class="stat-note">
+        Comptes à email vérifié, hors administration
+        @if (clients.totalUnverified) {
+          · {{ clients.totalUnverified }} inscription(s) jamais confirmée(s)
+        }
+      </p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ percent(stats.cancellationRate) }}</div>
+      <div class="stat-label">Taux de désistement</div>
+      <p class="stat-note">
+        {{ stats.cancelledCount }} annulée(s) sur {{ stats.cancelledCount + stats.honoredCount }} décidée(s)
+        @if (stats.pendingCount) {
+          · {{ stats.pendingCount }} en attente, non comptée(s)
+        }
+      </p>
+    </div>
+  </div>
+
+  <!-- Faits marquants -->
+  <div class="stat-grid">
+    <div class="stat-card highlight">
+      <div class="stat-label">Prestation la plus réservée</div>
+      <div class="highlight-value">{{ topServiceName }}</div>
+      <p class="stat-note">{{ topServiceCount }} réservation(s)</p>
+    </div>
+    <div class="stat-card highlight">
+      <div class="stat-label">Créneau le plus demandé</div>
+      <div class="highlight-value">{{ peakHour }}</div>
+      <p class="stat-note">Sur l'ensemble de l'historique</p>
+    </div>
+    <div class="stat-card highlight">
+      <div class="stat-label">Client le plus fidèle</div>
+      <div class="highlight-value">{{ bestClient?.name || '—' }}</div>
+      <p class="stat-note">
+        @if (bestClient) {
+          {{ bestClient.bookings }} visite(s) · {{ money(bestClient.revenue) }}
+        } @else {
+          Aucune réservation terminée
+        }
+      </p>
+    </div>
+  </div>
+
+  <!-- Une seule rangée de filtres, au-dessus de tout ce qu'elle cadre -->
+  <div class="filter-row">
+    <div class="field inline">
+      <label for="months">Historique du chiffre d'affaires</label>
+      <select id="months" [(ngModel)]="monthsRange" (ngModelChange)="onRangeChange()">
+        @for (option of monthOptions; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+    <div class="field inline">
+      <label for="days">Courbe des réservations</label>
+      <select id="days" [(ngModel)]="daysRange" (ngModelChange)="onRangeChange()">
+        @for (option of dayOptions; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- CA par mois -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Chiffre d'affaires par mois</h2>
+    </div>
+    <div class="panel-body">
+      <app-bar-chart
+        [points]="stats.revenueByMonth"
+        [formatter]="formatAmount"
+        categoryHeader="Mois"
+        valueHeader="Chiffre d'affaires"
+        emptyMessage="Aucune réservation terminée sur la période." />
+    </div>
+  </div>
+
+  <!-- Évolution des réservations -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Évolution des réservations</h2>
+    </div>
+    <div class="panel-body">
+      <app-line-chart
+        [points]="stats.bookingsByDay"
+        [formatter]="formatCount"
+        ariaLabel="Nombre de réservations par jour"
+        categoryHeader="Jour"
+        valueHeader="Réservations"
+        emptyMessage="Pas assez de données pour tracer une courbe." />
+    </div>
+  </div>
+
+  <!-- Croissance de la clientèle -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Clients inscrits (email vérifié)</h2>
+      <span class="panel-note">
+        +{{ clients.newVerifiedInPeriod }} sur la période
+      </span>
+    </div>
+    <div class="panel-body">
+      <app-line-chart
+        [points]="clients.curve"
+        [formatter]="formatCount"
+        ariaLabel="Nombre cumulé de clients inscrits avec email vérifié"
+        categoryHeader="Jour"
+        valueHeader="Clients inscrits"
+        emptyMessage="Pas encore assez d'inscriptions pour tracer une courbe." />
+    </div>
+  </div>
+
+  <!-- Répartition par civilité -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Répartition des clients par civilité</h2>
+      <span class="panel-note">{{ genderKnownCount }} sur {{ clientList.length }} renseigné(s)</span>
+    </div>
+    <div class="panel-body">
+      <app-donut-chart
+        [segments]="genderSegments"
+        totalLabel="clients inscrits"
+        ariaLabel="Répartition des clients par civilité"
+        emptyMessage="Aucun client inscrit pour l'instant." />
+    </div>
+  </div>
+
+  <!-- Annuaire des clients -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Liste des clients</h2>
+      <span class="panel-note">{{ filteredClients.length }} sur {{ clientList.length }}</span>
+    </div>
+
+    <div class="panel-body">
+      <div class="filters">
+        <div class="field">
+          <label for="client-search">Recherche</label>
+          <input
+            id="client-search"
+            type="text"
+            placeholder="Nom, email, téléphone"
+            [(ngModel)]="clientSearch"
+            (ngModelChange)="onClientFilterChange()">
+        </div>
+        <div class="field">
+          <label for="client-status">Statut du compte</label>
+          <select
+            id="client-status"
+            [(ngModel)]="clientStatus"
+            (ngModelChange)="onClientFilterChange()">
+            @for (option of clientStatusOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="client-size">Par page</label>
+          <select
+            id="client-size"
+            [(ngModel)]="clientPageSize"
+            (ngModelChange)="onClientFilterChange()">
+            @for (size of pageSizeOptions; track size) {
+              <option [ngValue]="size">{{ size }}</option>
+            }
+          </select>
+        </div>
+        <button class="btn-sm" (click)="resetClientFilters()">Réinitialiser</button>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Statut</th>
+            <th>Inscrit le</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (client of pagedClients; track client.client_id) {
+            <tr>
+              <td class="cell-strong">{{ client.full_name || '—' }}</td>
+              <td class="cell-muted">{{ client.email || '—' }}</td>
+              <td>{{ client.phone || '—' }}</td>
+              <td>
+                <span class="badge" [class]="client.email_verified ? 'badge badge-active' : 'badge badge-pending'">
+                  {{ client.email_verified ? 'Vérifié' : 'En attente' }}
+                </span>
+              </td>
+              <td>{{ formatSignupDate(client.signed_up_at) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="state">
+                @if (clientList.length) {
+                  Aucun client ne correspond à ces filtres.
+                } @else {
+                  Aucun compte client inscrit pour l'instant.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (filteredClients.length) {
+      <div class="panel-body pagination">
+        <span class="pagination-info">
+          {{ clientRangeStart }}–{{ clientRangeEnd }} sur {{ filteredClients.length }}
+        </span>
+        <div class="pagination-controls">
+          <button
+            class="btn-sm"
+            [disabled]="clientPage <= 1"
+            (click)="goToPage(clientPage - 1)">
+            Précédent
+          </button>
+          <span class="pagination-page">Page {{ clientPage }} / {{ clientPageCount }}</span>
+          <button
+            class="btn-sm"
+            [disabled]="clientPage >= clientPageCount"
+            (click)="goToPage(clientPage + 1)">
+            Suivant
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <!-- Fidélité -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Clients les plus fidèles</h2>
+      <span class="panel-note">Sur l'ensemble de l'historique</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Contact</th>
+            <th class="num">Visites</th>
+            <th class="num">Total dépensé</th>
+            <th>Dernière visite</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (client of stats.loyalClients; track client.key) {
+            <tr>
+              <td class="cell-strong">{{ client.name }}</td>
+              <td>
+                @if (client.email) {
+                  <span class="cell-muted">{{ client.email }}</span>
+                } @else {
+                  <span class="badge badge-inactive">Réservation en mode invité</span>
+                  @if (client.phone) {
+                    <div class="cell-muted guest-phone">{{ client.phone }}</div>
+                  }
+                }
+              </td>
+              <td class="num">{{ client.bookings }}</td>
+              <td class="num">{{ money(client.revenue) }}</td>
+              <td>{{ formatDate(client.lastVisit) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="state">Aucune réservation terminée pour l'instant.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Prestations -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Prestations les plus réservées</h2>
+    </div>
+    <div class="panel-body">
+      <app-bar-chart
+        [points]="stats.topServices"
+        [horizontal]="true"
+        [formatter]="formatCount"
+        categoryHeader="Prestation"
+        valueHeader="Réservations"
+        emptyMessage="Aucune réservation terminée pour l'instant." />
+    </div>
+  </div>
+
+  <!-- Créneaux -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Créneaux horaires les plus demandés</h2>
+    </div>
+    <div class="panel-body">
+      <app-bar-chart
+        [points]="stats.busiestHours"
+        [formatter]="formatCount"
+        categoryHeader="Heure de début"
+        valueHeader="Réservations"
+        emptyMessage="Aucune réservation terminée pour l'instant." />
+    </div>
+  </div>
+
+  <p class="method-note">
+    Tous les indicateurs de cette page - chiffre d'affaires, panier moyen, classements
+    des prestations, des créneaux et des clients — ne comptent que les réservations
+    <strong>terminées</strong>. Une réservation confirmée reste un engagement, pas une
+    prestation rendue : elle n'entre dans les comptes qu'une fois marquée terminée
+    depuis l'écran Réservations.
+    <br><br>
+    Chaque montant est celui <strong>figé au moment de la réservation</strong> :
+    modifier le tarif d'une prestation n'altère pas l'historique.
+  </p>
+}

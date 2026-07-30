@@ -74,6 +74,31 @@
 
     .arrow { opacity: 1; }
   }
+
+  // Date fermée, bloquée ou complète : visiblement inerte
+  &.unavailable {
+    background: #F2EFF1;
+    color: #9A8E97;
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: transparent;
+      transform: none;
+      background: #F2EFF1;
+    }
+  }
+}
+
+.unavailable-tag {
+  flex-shrink: 0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #E4DCE2;
+  color: #6E5F6B;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .date-label {

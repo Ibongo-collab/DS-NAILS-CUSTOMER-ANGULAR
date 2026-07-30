@@ -1,0 +1,21 @@
+<div class="admin-shell">
+  <header class="admin-head">
+    <div>
+      <p class="admin-eyebrow">Administration</p>
+      <h1 class="admin-title">Gestion du salon</h1>
+    </div>
+    @if (adminName) {
+      <p class="admin-user">Connecté en tant que <strong>{{ adminName }}</strong></p>
+    }
+  </header>
+
+  <nav class="admin-tabs">
+    <a routerLink="reservations" routerLinkActive="active" class="admin-tab">Réservations</a>
+    <a routerLink="statistiques" routerLinkActive="active" class="admin-tab">Statistiques</a>
+    <a routerLink="prestations" routerLinkActive="active" class="admin-tab">Prestations</a>
+    <a routerLink="horaires" routerLinkActive="active" class="admin-tab">Horaires</a>
+    <a routerLink="indisponibilites" routerLinkActive="active" class="admin-tab">Indisponibilités</a>
+  </nav>
+
+  <router-outlet />
+</div>

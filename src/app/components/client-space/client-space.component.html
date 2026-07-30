@@ -24,7 +24,19 @@
       </div>
     }
 
-    @if (!loading) {
+    @if (!loading && isAdmin) {
+      <section class="section">
+        <button class="settings-row" (click)="goToSettings()">
+          <span class="settings-text">
+            <span class="settings-title">Paramètres du compte</span>
+            <span class="settings-hint">Nom, civilité, adresse e-mail et mot de passe</span>
+          </span>
+          <app-icon name="arrow-right" [size]="18"></app-icon>
+        </button>
+      </section>
+    }
+
+    @if (!loading && !isAdmin) {
       <section class="section">
         <h2 class="section-title">À venir</h2>
 
@@ -48,9 +60,9 @@
             <div class="booking-details">
               <span class="booking-date">{{ formatDate(booking.booking_date) }}</span>
               <span class="separator">·</span>
-              <span class="booking-time">{{ booking.start_time }}</span>
+              <span class="booking-time">{{ booking.start_time | time }}</span>
               <span class="separator">·</span>
-              <span class="booking-duration">{{ booking.services?.duration_minutes }} min</span>
+              <span class="booking-duration">{{ booking.services?.duration_minutes | duration }}</span>
             </div>
             @if (canCancel(booking)) {
               <div class="booking-actions">
@@ -67,7 +79,19 @@
       </section>
 
       <hr>
-      
+
+      <section class="section">
+        <button class="settings-row" (click)="goToSettings()">
+          <span class="settings-text">
+            <span class="settings-title">Paramètres du compte</span>
+            <span class="settings-hint">Nom, civilité et adresse e-mail</span>
+          </span>
+          <app-icon name="arrow-right" [size]="18"></app-icon>
+        </button>
+      </section>
+
+      <hr>
+
       <section class="section">
         <h2 class="section-title">Historique</h2>
 
@@ -88,7 +112,7 @@
             <div class="booking-details">
               <span class="booking-date">{{ formatDate(booking.booking_date) }}</span>
               <span class="separator">·</span>
-              <span class="booking-time">{{ booking.start_time }}</span>
+              <span class="booking-time">{{ booking.start_time | time }}</span>
             </div>
           </div>
         }
@@ -110,7 +134,7 @@
         <h3 class="modal-title">Annuler ce rendez-vous ?</h3>
         <p class="modal-body">
           <strong>{{ bookingToCancel.services?.name || 'Rendez-vous' }}</strong><br>
-          {{ formatDate(bookingToCancel.booking_date) }} à {{ bookingToCancel.start_time }}
+          {{ formatDate(bookingToCancel.booking_date) }} à {{ bookingToCancel.start_time | time }}
         </p>
         <p class="modal-warning">Cette action est irréversible.</p>
         <div class="modal-actions">

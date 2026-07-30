@@ -29,7 +29,7 @@
           <div class="detail-info">
             <div class="detail-label">Horaire</div>
             <div class="detail-value">
-              {{ bookingState.selectedTime }} - {{ calculateEndTime() }}
+              {{ bookingState.selectedTime | time }} - {{ calculateEndTime() | time }}
             </div>
           </div>
         </div>

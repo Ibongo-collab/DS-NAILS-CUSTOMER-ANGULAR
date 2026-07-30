@@ -5,14 +5,13 @@ import { BookingService } from '../../services/booking.service';
 import { AuthService } from '../../services/auth.service';
 import { BookingRequest } from '../../models/booking.model';
 import { PhoneInputComponent } from '../shared/phone-input/phone-input.component';
-import { PasswordResetModalComponent } from '../shared/password-reset-modal/password-reset-modal.component';
 import { IconComponent } from '../shared/icon/icon.component';
 import { isValidPhone, normalizePhone, PHONE_ERROR_MESSAGE } from '../../validators/phone.validator';
 
 @Component({
   selector: 'app-client-form',
   standalone: true,
-  imports: [FormsModule, PhoneInputComponent, PasswordResetModalComponent, IconComponent],
+  imports: [FormsModule, PhoneInputComponent, IconComponent],
   templateUrl: './client-form.component.html',
   styleUrls: ['./client-form.component.scss']
 })
@@ -30,7 +29,6 @@ export class ClientFormComponent implements OnInit {
 
   private _mustLogin = false;
   showManualLogin = false;
-  showResetModal = false;
   loginEmail = '';
   loginPassword = '';
   showLoginPassword = false;
@@ -252,5 +250,9 @@ export class ClientFormComponent implements OnInit {
 
   goToAuth(): void {
     this.router.navigate(['/auth']);
+  }
+
+  goToForgotPassword(): void {
+    this.router.navigate(['/mot-de-passe-oublie']);
   }
 }

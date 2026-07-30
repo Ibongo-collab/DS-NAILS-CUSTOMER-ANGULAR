@@ -1,0 +1,18 @@
+@use '../admin-ui' as *;
+
+.closed-toggle {
+  width: 18px;
+  height: 18px;
+  accent-color: #69005A;
+  cursor: pointer;
+}
+
+td input[type='time'] {
+  min-width: 120px;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #F7F2F6;
+  }
+}
