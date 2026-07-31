@@ -13,8 +13,19 @@
         <input id="new-name" type="text" [(ngModel)]="newDraft.name" placeholder="Manucure sur capsule">
       </div>
       <div class="field">
-        <label for="new-duration">Durée (min)</label>
-        <input id="new-duration" type="number" min="5" step="5" [(ngModel)]="newDraft.duration_minutes">
+        <label for="new-hours">Heures</label>
+        <input id="new-hours" type="number" min="0" max="12" step="1" placeholder="0"
+               [(ngModel)]="newDraft.hours">
+      </div>
+      <div class="field">
+        <label for="new-minutes">Minutes</label>
+        <input id="new-minutes" type="number" min="0" max="59" step="5" placeholder="0"
+               [(ngModel)]="newDraft.minutes">
+        @if (newDraft.minutes && newDraft.minutes > 59) {
+          <span class="field-warn">59 au maximum — utilisez le champ Heures.</span>
+        } @else if (durationLabel(newDraft)) {
+          <span class="field-hint">Durée : {{ durationLabel(newDraft) }}</span>
+        }
       </div>
       <div class="field">
         <label for="new-price">Prix (FCFA)</label>
@@ -118,7 +129,27 @@
                   }
                 </td>
                 <td><input type="text" [(ngModel)]="editDraft.name"></td>
-                <td><input type="number" min="5" step="5" [(ngModel)]="editDraft.duration_minutes"></td>
+                <td>
+                  <div class="duration-inputs">
+                    <label class="duration-unit">
+                      <input type="number" min="0" max="12" step="1" placeholder="0"
+                             [(ngModel)]="editDraft.hours"
+                             aria-label="Heures">
+                      <span>h</span>
+                    </label>
+                    <label class="duration-unit">
+                      <input type="number" min="0" max="59" step="5" placeholder="0"
+                             [(ngModel)]="editDraft.minutes"
+                             aria-label="Minutes">
+                      <span>min</span>
+                    </label>
+                  </div>
+                  @if (editDraft.minutes && editDraft.minutes > 59) {
+                    <span class="field-warn">59 max</span>
+                  } @else if (durationLabel(editDraft)) {
+                    <span class="field-hint">{{ durationLabel(editDraft) }}</span>
+                  }
+                </td>
                 <td><input type="number" min="0" step="500" [(ngModel)]="editDraft.price"></td>
                 <td>—</td>
                 <td class="cell-actions">

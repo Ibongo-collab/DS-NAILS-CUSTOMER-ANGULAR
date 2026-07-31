@@ -6,7 +6,9 @@ import { IconComponent } from '../../components/shared/icon/icon.component';
 
 interface ServiceDraft {
   name: string;
-  duration_minutes: number | null;
+  /** Saisie séparée ; la base reçoit le total en minutes */
+  hours: number | null;
+  minutes: number | null;
   price: number | null;
   description: string;
 }
@@ -59,7 +61,31 @@ export class AdminServicesComponent implements OnInit {
   }
 
   private emptyDraft(): ServiceDraft {
-    return { name: '', duration_minutes: null, price: null, description: '' };
+    return { name: '', hours: null, minutes: null, price: null, description: '' };
+  }
+
+  /** Combine les deux champs en un total de minutes, seul format stocké. */
+  totalMinutes(draft: ServiceDraft): number {
+    const hours = Math.max(Number(draft.hours) || 0, 0);
+    const minutes = Math.max(Number(draft.minutes) || 0, 0);
+    return hours * 60 + minutes;
+  }
+
+  private isDurationValid(draft: ServiceDraft): boolean {
+    const minutes = Number(draft.minutes) || 0;
+    // Au-delà de 59, c'est une heure qu'il faut saisir dans le champ voisin
+    if (minutes > 59) return false;
+    return this.totalMinutes(draft) > 0;
+  }
+
+  /** Aperçu « 1 h 30 » affiché sous les champs de saisie. */
+  durationLabel(draft: ServiceDraft): string {
+    const total = this.totalMinutes(draft);
+    if (total <= 0) return '';
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    if (h === 0) return `${m} min`;
+    return m === 0 ? `${h} h` : `${h} h ${m}`;
   }
 
   // --- Sélection d'une photo ---
@@ -179,8 +205,7 @@ export class AdminServicesComponent implements OnInit {
   get canCreate(): boolean {
     return (
       this.newDraft.name.trim().length > 0 &&
-      !!this.newDraft.duration_minutes &&
-      this.newDraft.duration_minutes > 0 &&
+      this.isDurationValid(this.newDraft) &&
       this.newDraft.price !== null &&
       this.newDraft.price >= 0
     );
@@ -209,7 +234,7 @@ export class AdminServicesComponent implements OnInit {
 
     const result = await this.adminService.createService({
       name: this.newDraft.name.trim(),
-      duration_minutes: Number(this.newDraft.duration_minutes),
+      duration_minutes: this.totalMinutes(this.newDraft),
       price: Number(this.newDraft.price),
       description: this.newDraft.description.trim() || null,
       image_url: imageUrl,
@@ -241,7 +266,8 @@ export class AdminServicesComponent implements OnInit {
     this.editingId = service.id;
     this.editDraft = {
       name: service.name,
-      duration_minutes: service.duration_minutes,
+      hours: Math.floor(service.duration_minutes / 60) || null,
+      minutes: service.duration_minutes % 60 || null,
       price: service.price,
       description: service.description || ''
     };
@@ -260,8 +286,7 @@ export class AdminServicesComponent implements OnInit {
   get canSaveEdit(): boolean {
     return (
       this.editDraft.name.trim().length > 0 &&
-      !!this.editDraft.duration_minutes &&
-      this.editDraft.duration_minutes > 0 &&
+      this.isDurationValid(this.editDraft) &&
       this.editDraft.price !== null &&
       this.editDraft.price >= 0
     );
@@ -292,7 +317,7 @@ export class AdminServicesComponent implements OnInit {
 
     const result = await this.adminService.updateService(service.id, {
       name: this.editDraft.name.trim(),
-      duration_minutes: Number(this.editDraft.duration_minutes),
+      duration_minutes: this.totalMinutes(this.editDraft),
       price: Number(this.editDraft.price),
       description: this.editDraft.description.trim() || null,
       image_url: imageUrl

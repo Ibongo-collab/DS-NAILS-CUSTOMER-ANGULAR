@@ -5,6 +5,59 @@ td input {
   min-width: 90px;
 }
 
+// --- Durée en heures + minutes ---
+
+.duration-inputs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.duration-unit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  input {
+    width: 58px;
+    min-width: 0;
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: #8A6A85;
+  }
+}
+
+.field-hint {
+  font-size: 0.74rem;
+  color: #7A3A70;
+}
+
+.field-warn {
+  font-size: 0.74rem;
+  color: #c0392b;
+}
+
+/* Dans le formulaire d'ajout, la grille aligne les champs par le bas : un
+   texte sous un seul d'entre eux le ferait remonter par rapport aux autres.
+   On le sort donc du flux, et on réserve la hauteur correspondante sous la
+   rangée pour qu'il ne recouvre pas la section suivante. */
+.field-grid {
+  padding-bottom: 1.15rem;
+
+  .field {
+    position: relative;
+  }
+
+  .field-hint,
+  .field-warn {
+    position: absolute;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    white-space: nowrap;
+  }
+}
+
 // --- Photo dans le formulaire d'ajout ---
 
 .image-field {
