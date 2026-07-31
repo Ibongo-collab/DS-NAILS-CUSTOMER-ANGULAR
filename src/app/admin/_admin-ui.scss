@@ -213,3 +213,28 @@ select {
   gap: 0.75rem;
   align-items: end;
 }
+
+/* Hauteur commune des contrôles de saisie et des boutons placés sur la même
+   rangée. Sans elle, chaque élément prend la hauteur que lui donnent sa police
+   et son padding : le bouton, plus petit, ne s'aligne pas avec les champs.
+   Les cases à cocher, boutons radio et sélecteurs de fichier sont exclus,
+   leur dimension leur est propre. */
+.filters,
+.field-grid {
+  --control-height: 40px;
+
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select {
+    height: var(--control-height);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.filters > .btn-sm {
+  height: var(--control-height);
+  margin-left: 0;
+  /* Compense l'absence d'étiquette au-dessus : le bouton reste sur la même
+     ligne de base que les champs, qui en ont une. */
+  flex-shrink: 0;
+}
