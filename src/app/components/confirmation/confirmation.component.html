@@ -75,6 +75,23 @@
       </div>
     }
 
+    @if (showAccountInvite) {
+      <section class="account-invite">
+        <div class="invite-icon"><app-icon name="user" [size]="22"></app-icon></div>
+        <div class="invite-body">
+          <h3 class="invite-title">Retrouvez ce rendez-vous à tout moment</h3>
+          <p class="invite-text">
+            Créez votre compte avec l'adresse <strong>{{ clientEmail }}</strong> :
+            cette réservation y sera rattachée automatiquement, et vous pourrez
+            la consulter ou l'annuler depuis Mon espace.
+          </p>
+          <button class="btn btn-invite" (click)="createAccount()">
+            Créer mon compte
+          </button>
+        </div>
+      </section>
+    }
+
     <div class="btn-container">
       <button class="btn btn-primary" (click)="newBooking()">
         Nouvelle réservation

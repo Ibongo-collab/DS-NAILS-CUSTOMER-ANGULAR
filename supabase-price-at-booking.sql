@@ -9,6 +9,14 @@
 -- réservation créée, son prix ne bouge plus.
 --
 -- Prérequis : supabase-secure-bookings.sql (fournit public.create_booking).
+--
+-- ⚠ NE PLUS EXÉCUTER CE FICHIER SI supabase-bookings-user-link.sql L'A ÉTÉ.
+-- La version de `create_booking` définie en section 3 ci-dessous est
+-- antérieure : elle ignore la colonne `user_id`, et la rejouer casserait le
+-- rattachement des réservations aux comptes clients.
+-- Ce fichier n'a plus d'utilité propre : supabase-bookings-user-link.sql crée
+-- désormais lui-même la colonne `price_at_booking` et fait la reprise.
+-- Il est conservé pour mémoire de la migration d'origine.
 
 -- ============================================
 -- 1. COLONNE

@@ -99,7 +99,7 @@
         <tbody>
           @for (service of services; track service.id) {
             @if (editingId === service.id) {
-              <tr>
+              <tr class="editing">
                 <td class="cell-image">
                   <label
                     class="dropzone dropzone-compact"

@@ -39,7 +39,19 @@
       </div>
       <div class="field">
         <label for="date">Date</label>
-        <input id="date" type="date" [(ngModel)]="dateFilter">
+        <div class="date-field">
+          <input id="date" type="date" [(ngModel)]="dateFilter">
+          @if (dateFilter) {
+            <button
+              type="button"
+              class="clear-date"
+              (click)="clearDateFilter()"
+              aria-label="Effacer le filtre de date"
+              title="Effacer la date">
+              &times;
+            </button>
+          }
+        </div>
       </div>
       <div class="field">
         <label for="search">Recherche</label>
@@ -132,7 +144,7 @@
 
       <div class="modal-recap">
         <div class="recap-row">
-          <span class="recap-label">Cliente</span>
+          <span class="recap-label">{{ clientLabel(bookingToComplete) }}</span>
           <span class="recap-value">{{ bookingToComplete.client_name }}</span>
         </div>
         <div class="recap-row">

@@ -255,4 +255,8 @@ export class ClientFormComponent implements OnInit {
   goToForgotPassword(): void {
     this.router.navigate(['/mot-de-passe-oublie']);
   }
+
+  goToRegister(): void {
+    this.router.navigate(['/auth'], { queryParams: { tab: 'register' } });
+  }
 }

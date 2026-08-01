@@ -192,6 +192,25 @@
   &:hover { color: #4A0040; }
 }
 
+/* Les deux issues possibles depuis la connexion : mot de passe oublié et
+   création de compte. Empilées, pas côte à côte : sur mobile elles
+   passeraient à la ligne de façon désordonnée. */
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.auth-links-text {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.825rem;
+  color: #7A6A78;
+
+  .forgot-link { font-weight: 600; }
+}
+
 .forgot-link {
   align-self: flex-start;
   background: none;

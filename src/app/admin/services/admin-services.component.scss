@@ -5,11 +5,21 @@ td input {
   min-width: 90px;
 }
 
+/* Ligne en cours d'édition : l'aperçu de durée rend la cellule Durée plus
+   haute que les autres. Avec l'alignement vertical centré par défaut, ses
+   champs remontaient par rapport au nom et au prix. On aligne par le haut :
+   tous les champs partent alors de la même ligne, l'aperçu déborde en dessous
+   sans rien déplacer. */
+tr.editing td {
+  vertical-align: top;
+}
+
 // --- Durée en heures + minutes ---
 
 .duration-inputs {
   display: flex;
   gap: 0.4rem;
+  align-items: center;
 }
 
 .duration-unit {

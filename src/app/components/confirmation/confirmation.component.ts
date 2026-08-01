@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { BookingService } from '../../services/booking.service';
+import { AuthService } from '../../services/auth.service';
 import { BookingState } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
 import { TimePipe } from '../../pipes/time.pipe';
@@ -14,10 +15,13 @@ import { TimePipe } from '../../pipes/time.pipe';
 })
 export class ConfirmationComponent implements OnInit {
   bookingState: BookingState | null = null;
+  private isAuthenticated = false;
 
   constructor(
     private bookingService: BookingService,
-    private router: Router
+    private authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -28,7 +32,35 @@ export class ConfirmationComponent implements OnInit {
         !this.bookingState.selectedTime ||
         !this.bookingState.clientInfo) {
       this.router.navigate(['/']);
+      return;
     }
+
+    this.authService.currentUser$.subscribe(user => {
+      if (user === undefined) return; // session pas encore résolue
+      this.isAuthenticated = !!user;
+      this.cdr.detectChanges();
+    });
+  }
+
+  /** Adresse saisie à la réservation, seule clé de rattachement possible. */
+  get clientEmail(): string {
+    return this.bookingState?.clientInfo?.email?.trim() || '';
+  }
+
+  /**
+   * L'invitation à créer un compte n'a de sens que si la réservation porte une
+   * adresse — c'est elle qui permettra de la retrouver — et si la personne
+   * n'est pas déjà connectée.
+   */
+  get showAccountInvite(): boolean {
+    return !this.isAuthenticated && !!this.clientEmail;
+  }
+
+  /** L'adresse part en paramètre pour être pré-remplie, et garantir le lien. */
+  createAccount(): void {
+    this.router.navigate(['/auth'], {
+      queryParams: { tab: 'register', email: this.clientEmail }
+    });
   }
 
   formatDate(dateString: string): string {

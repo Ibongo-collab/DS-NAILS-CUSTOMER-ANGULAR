@@ -37,6 +37,13 @@ export const ADMIN_ROUTES: Routes = [
           )
       },
       {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./notifications/admin-notifications.component').then(
+            m => m.AdminNotificationsComponent
+          )
+      },
+      {
         path: 'indisponibilites',
         loadComponent: () =>
           import('./blocked-slots/admin-blocked-slots.component').then(

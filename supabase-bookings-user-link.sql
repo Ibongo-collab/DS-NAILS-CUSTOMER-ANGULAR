@@ -11,6 +11,34 @@
 -- trace de l'adresse saisie à la réservation, plus comme identifiant.
 --
 -- Prérequis : supabase-secure-bookings.sql.
+--
+-- ⚠ ORDRE DES MIGRATIONS
+-- Ce fichier redéfinit `create_booking` avec sa version la plus récente : il
+-- doit être joué EN DERNIER. Ne rejouez pas supabase-price-at-booking.sql
+-- après lui — sa version de la fonction est antérieure et ignore `user_id`.
+-- Les colonnes dont il dépend sont créées ici même, en section 0, pour qu'il
+-- fonctionne quel que soit ce qui a été exécuté avant.
+
+-- ============================================
+-- 0. COLONNES REQUISES PAR LA FONCTION
+-- ============================================
+-- `price_at_booking` vient normalement de supabase-price-at-booking.sql.
+-- On la recrée ici si elle manque : sans elle, l'insertion échoue avec
+-- « column price_at_booking of relation bookings does not exist ».
+
+ALTER TABLE public.bookings
+    ADD COLUMN IF NOT EXISTS price_at_booking NUMERIC(10,2);
+
+COMMENT ON COLUMN public.bookings.price_at_booking IS
+    'Tarif de la prestation au moment de la réservation. Figé : ne pas recalculer.';
+
+-- Réservations antérieures : on les initialise au tarif courant, seule
+-- approximation disponible. Ne touche pas aux lignes déjà renseignées.
+UPDATE public.bookings b
+SET price_at_booking = s.price
+FROM public.services s
+WHERE b.service_id = s.id
+  AND b.price_at_booking IS NULL;
 
 -- ============================================
 -- 1. COLONNE DE LIAISON

@@ -61,6 +61,15 @@ export class AuthComponent implements OnInit {
       this.activeTab = tab;
     }
 
+    // Adresse transmise depuis la confirmation de réservation : la pré-remplir
+    // évite une ressaisie, et surtout garantit que le compte créé portera bien
+    // l'adresse qui permettra de retrouver la réservation.
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) {
+      this.regEmail = email;
+      this.loginEmail = email;
+    }
+
     const reason = this.route.snapshot.queryParamMap.get('reason');
 
     if (reason === 'email-change') {

@@ -103,6 +103,88 @@
   p { margin: 0; }
 }
 
+/* Invitation à créer un compte, proposée une fois la réservation acquise.
+   Présentée en encadré discret : c'est une suggestion, pas une étape. */
+.account-invite {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(105, 0, 90, 0.14);
+  border-radius: 12px;
+  background: #FCF4FB;
+}
+
+.invite-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #F3E6F1;
+  color: #69005A;
+}
+
+.invite-body {
+  min-width: 0;
+}
+
+.invite-title {
+  margin: 0 0 0.4rem;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #69005A;
+}
+
+.invite-text {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #6B5566;
+
+  strong {
+    color: #69005A;
+    font-weight: 600;
+    word-break: break-word;
+  }
+}
+
+/* Contour plutôt que fond plein : le bouton principal de l'écran reste
+   « Nouvelle réservation », celui-ci ne doit pas lui disputer l'attention. */
+.btn-invite {
+  flex: none;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid #69005A;
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #69005A;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: #69005A;
+    color: #fff;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-invite {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .btn-invite { width: 100%; }
+}
+
 .btn-container {
   display: flex;
   gap: 1rem;

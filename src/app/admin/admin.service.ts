@@ -18,6 +18,40 @@ export interface ClientSignup {
   unverified_count: number;
 }
 
+export type NotificationStatus = 'queued' | 'sent' | 'failed' | 'simulated' | 'skipped';
+
+/** Une ligne du journal d'envoi (cf. supabase-notifications.sql) */
+export interface NotificationRow {
+  id: string;
+  booking_id: string | null;
+  event: string;
+  audience: 'admin' | 'client';
+  channel: string;
+  recipient: string | null;
+  message: string;
+  status: NotificationStatus;
+  error: string | null;
+  attempts: number;
+  created_at: string;
+  processed_at: string | null;
+}
+
+export interface NotificationSettings {
+  id: boolean;
+  admin_phone: string | null;
+  notify_admin: boolean;
+  notify_client: boolean;
+  updated_at: string;
+}
+
+type ProfileGender = 'homme' | 'femme' | null;
+
+interface ProfileRow {
+  id: string;
+  email: string | null;
+  gender: ProfileGender;
+}
+
 /** Un compte client inscrit (cf. supabase-client-stats.sql) */
 export interface ClientRow {
   client_id: string;
@@ -53,18 +87,49 @@ export class AdminService {
   // ==================== RÉSERVATIONS ====================
 
   async getBookings(): Promise<Booking[]> {
-    const { data, error } = await this.supabase.client
-      .from('bookings')
-      // `price` alimente les statistiques comptables
-      .select('*, services(name, duration_minutes, price)')
-      .order('booking_date', { ascending: false })
-      .order('start_time', { ascending: false });
+    // La civilité vit dans `profiles`, mais la clé étrangère de `user_id`
+    // pointe vers `auth.users` : PostgREST ne sait donc pas imbriquer les deux.
+    // On récupère les profils en parallèle et on rapproche côté application.
+    const [bookingsRes, profilesRes] = await Promise.all([
+      this.supabase.client
+        .from('bookings')
+        // `price` alimente les statistiques comptables
+        .select('*, services(name, duration_minutes, price)')
+        .order('booking_date', { ascending: false })
+        .order('start_time', { ascending: false }),
+      this.supabase.client.from('profiles').select('id, email, gender')
+    ]);
 
-    if (error || !data) {
-      console.error('Erreur lors de la récupération des réservations:', error);
+    if (bookingsRes.error || !bookingsRes.data) {
+      console.error('Erreur lors de la récupération des réservations:', bookingsRes.error);
       return [];
     }
-    return data as Booking[];
+
+    const bookings = bookingsRes.data as Booking[];
+    if (profilesRes.error) {
+      // Sans les profils, les libellés resteront neutres : ce n'est pas une
+      // raison de priver l'écran de ses réservations.
+      console.error('Erreur lors de la récupération des profils:', profilesRes.error);
+      return bookings;
+    }
+
+    const byId = new Map<string, ProfileGender>();
+    const byEmail = new Map<string, ProfileGender>();
+
+    for (const profile of (profilesRes.data as ProfileRow[]) ?? []) {
+      if (profile.id) byId.set(profile.id, profile.gender ?? null);
+      if (profile.email) byEmail.set(profile.email.toLowerCase(), profile.gender ?? null);
+    }
+
+    for (const booking of bookings) {
+      // Le compte d'abord, l'adresse en secours pour les réservations
+      // antérieures au rattachement par identifiant
+      const fromAccount = booking.user_id ? byId.get(booking.user_id) : undefined;
+      const fromEmail = byEmail.get((booking.client_email || '').toLowerCase());
+      booking.client_gender = fromAccount ?? fromEmail ?? null;
+    }
+
+    return bookings;
   }
 
   async updateBookingStatus(bookingId: string, status: BookingStatus): Promise<AdminResult> {
@@ -130,6 +195,49 @@ export class AdminService {
       return [];
     }
     return data as ClientRow[];
+  }
+
+  // ==================== NOTIFICATIONS ====================
+
+  async getNotifications(limit = 100): Promise<NotificationRow[]> {
+    const { data, error } = await this.supabase.client
+      .from('notification_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error || !data) {
+      console.error('Erreur lors de la récupération des notifications:', error);
+      return [];
+    }
+    return data as NotificationRow[];
+  }
+
+  async getNotificationSettings(): Promise<NotificationSettings | null> {
+    const { data, error } = await this.supabase.client
+      .from('notification_settings')
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erreur lors de la récupération des réglages:', error);
+      return null;
+    }
+    return (data as NotificationSettings) ?? null;
+  }
+
+  async updateNotificationSettings(changes: Partial<NotificationSettings>): Promise<AdminResult> {
+    const { data, error } = await this.supabase.client
+      .from('notification_settings')
+      .update({ ...changes, updated_at: new Date().toISOString() })
+      .eq('id', true)
+      .select('id');
+
+    if (error) return this.fail(error, 'Impossible d\'enregistrer les réglages.');
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Enregistrement refusé. Vérifiez vos droits administrateur.' };
+    }
+    return { success: true };
   }
 
   // ==================== IMAGES DE PRESTATIONS ====================

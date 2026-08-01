@@ -64,6 +64,10 @@ export class AdminBookingsComponent implements OnInit {
     });
   }
 
+  clearDateFilter(): void {
+    this.dateFilter = '';
+  }
+
   resetFilters(): void {
     this.statusFilter = 'all';
     this.dateFilter = '';
@@ -101,6 +105,17 @@ export class AdminBookingsComponent implements OnInit {
 
     this.bookingToComplete = null;
     await this.setStatus(booking, 'completed');
+  }
+
+  /**
+   * Libellé accordé à la civilité déclarée.
+   * Sans compte rattaché — réservation en invité — aucune civilité n'est
+   * connue : la forme épicène évite d'en supposer une.
+   */
+  clientLabel(booking: Booking): string {
+    if (booking.client_gender === 'femme') return 'Cliente';
+    if (booking.client_gender === 'homme') return 'Client';
+    return 'Client(e)';
   }
 
   /** Montant qui sera comptabilisé : le tarif figé, sinon celui de la prestation. */

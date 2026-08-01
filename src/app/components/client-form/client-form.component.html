@@ -187,9 +187,17 @@
               </div>
             </div>
 
-            <button type="button" class="forgot-link" (click)="goToForgotPassword()">
-              Vous avez oublié votre mot de passe ?
-            </button>
+            <div class="auth-links">
+              <button type="button" class="forgot-link" (click)="goToForgotPassword()">
+                Vous avez oublié votre mot de passe ?
+              </button>
+              <span class="auth-links-text">
+                Vous n'avez pas de compte ?
+                <button type="button" class="forgot-link" (click)="goToRegister()">
+                  Inscrivez-vous
+                </button>
+              </span>
+            </div>
 
             @if (loginError) {
               <div class="inline-error">{{ loginError }}</div>

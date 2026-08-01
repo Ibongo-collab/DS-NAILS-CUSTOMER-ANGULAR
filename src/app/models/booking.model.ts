@@ -37,6 +37,14 @@ export interface Booking {
   notes?: string;
   /** Tarif figé à la création. Source de vérité du CA — ne jamais recalculer. */
   price_at_booking?: number | null;
+  /** Compte ayant réservé. NULL pour une réservation prise sans être connecté. */
+  user_id?: string | null;
+  /**
+   * Civilité de la cliente ou du client, rapprochée du profil côté application.
+   * Ce n'est pas une colonne de `bookings` : elle reste null pour une
+   * réservation prise en invité, faute de compte auquel la rattacher.
+   */
+  client_gender?: 'homme' | 'femme' | null;
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
