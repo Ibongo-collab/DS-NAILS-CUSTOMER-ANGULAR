@@ -1,0 +1,162 @@
+@if (loading) {
+  <div class="state">Chargement des notifications…</div>
+} @else {
+
+  @if (error) {
+    <div class="alert alert-error">{{ error }}</div>
+  }
+  @if (success) {
+    <div class="alert alert-success">{{ success }}</div>
+  }
+
+  @if (providerPending) {
+    <div class="panel banner">
+      <div class="panel-body">
+        <h2 class="banner-title">Envoi WhatsApp pas encore actif</h2>
+        <p class="banner-text">
+          Les messages sont rédigés et conservés ici, mais rien ne part encore :
+          l'envoi attend un <strong>numéro dédié</strong> pour l'API WhatsApp.
+          Cette page vous montre exactement ce qui sera envoyé, à qui et quand.
+          Le jour où le numéro est prêt, les messages en attente partiront sans
+          rien perdre.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- Réglages -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Réglages</h2>
+      @if (pendingCount) {
+        <span class="panel-note">{{ pendingCount }} message(s) en attente d'envoi</span>
+      }
+    </div>
+
+    <div class="panel-body">
+      <div class="filters">
+        <div class="field">
+          <label for="admin-phone">Numéro qui reçoit les alertes du salon</label>
+          <input
+            id="admin-phone"
+            type="tel"
+            [(ngModel)]="adminPhone"
+            placeholder="+242 06 513 71 36">
+        </div>
+        <button
+          class="btn-sm btn-primary-sm"
+          [disabled]="!phoneDirty || savingSettings"
+          (click)="savePhone()">
+          Enregistrer
+        </button>
+      </div>
+
+      @if (settings) {
+        <div class="switches">
+          <label class="switch">
+            <input
+              type="checkbox"
+              [checked]="settings.notify_admin"
+              [disabled]="savingSettings"
+              (change)="toggleAudience('admin')">
+            <span>
+              <strong>Alerter le salon</strong>
+              Nouvelle réservation, annulation par une cliente
+            </span>
+          </label>
+
+          <label class="switch">
+            <input
+              type="checkbox"
+              [checked]="settings.notify_client"
+              [disabled]="savingSettings"
+              (change)="toggleAudience('client')">
+            <span>
+              <strong>Prévenir les clientes</strong>
+              Confirmation, annulation par le salon, rappel 24 h avant
+            </span>
+          </label>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Journal -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Journal des messages</h2>
+      <button class="btn-sm" (click)="load()">Actualiser</button>
+    </div>
+
+    <div class="panel-body">
+      <div class="filters">
+        <div class="field">
+          <label for="status">État</label>
+          <select id="status" [(ngModel)]="statusFilter">
+            @for (option of statusOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="audience">Destinataire</label>
+          <select id="audience" [(ngModel)]="audienceFilter">
+            <option [ngValue]="'all'">Tous</option>
+            <option [ngValue]="'admin'">Salon</option>
+            <option [ngValue]="'client'">Clientes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Quand</th>
+            <th>Événement</th>
+            <th>Destinataire</th>
+            <th>Message</th>
+            <th>État</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered; track item.id) {
+            <tr>
+              <td class="cell-muted">{{ formatMoment(item.created_at) }}</td>
+              <td class="cell-strong">{{ eventLabel(item.event) }}</td>
+              <td>
+                <div>{{ audienceLabel(item.audience) }}</div>
+                <div class="cell-muted">{{ item.recipient || 'aucun numéro' }}</div>
+              </td>
+              <td class="message-cell">
+                {{ item.message }}
+                @if (item.error) {
+                  <div class="message-error">{{ item.error }}</div>
+                }
+              </td>
+              <td>
+                <span class="badge" [class]="'badge badge-' + item.status">
+                  {{ statusLabel(item.status) }}
+                </span>
+                @if (item.attempts > 1) {
+                  <div class="cell-muted">{{ item.attempts }} tentatives</div>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="state">
+                @if (notifications.length) {
+                  Aucun message ne correspond à ces filtres.
+                } @else {
+                  Aucune notification pour l'instant. La première réservation en déclenchera une.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

@@ -1,0 +1,88 @@
+@use '../admin-ui' as *;
+
+/* Bandeau d'état du dispositif : disparaît dès qu'un envoi réel a eu lieu. */
+.banner {
+  border-color: rgba(138, 97, 0, 0.25);
+  background: #FFF6E2;
+}
+
+.banner-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #8A6100;
+  margin-bottom: 0.5rem;
+}
+
+.banner-text {
+  font-size: 0.87rem;
+  line-height: 1.6;
+  color: #7A5A14;
+  max-width: 70ch;
+
+  strong { font-weight: 700; }
+}
+
+// --- Interrupteurs ---
+
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(105, 0, 90, 0.08);
+}
+
+.switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0.15rem 0 0;
+    accent-color: #69005A;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #8A6A85;
+  }
+
+  strong {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4A2344;
+  }
+}
+
+// --- Journal ---
+
+.message-cell {
+  min-width: 280px;
+  max-width: 460px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.message-error {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: #A03030;
+  word-break: break-word;
+}
+
+/* États propres aux notifications, en plus des badges partagés */
+.badge-queued    { background: #FFF3D6; color: #8A6100; }
+.badge-sent      { background: #E1F5E7; color: #1F6B3A; }
+.badge-failed    { background: #FBE3E3; color: #A03030; }
+.badge-simulated { background: #EAE6F5; color: #4B3A80; }
+.badge-skipped   { background: #EFE7EE; color: #7A3A70; }
