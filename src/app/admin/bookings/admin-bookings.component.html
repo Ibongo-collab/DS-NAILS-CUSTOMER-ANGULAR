@@ -1,6 +1,9 @@
 @if (error) {
   <div class="alert alert-error">{{ error }}</div>
 }
+@if (manualNotice) {
+  <div class="alert alert-success">{{ manualNotice }}</div>
+}
 
 <div class="stat-grid">
   <div class="stat-card">
@@ -17,8 +20,119 @@
   </div>
   <div class="stat-card">
     <div class="stat-value">{{ stats.upcoming }}</div>
-    <div class="stat-label">À venir</div>
+    <div class="stat-label">Jours suivants</div>
   </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Prestation réalisée sur place</h2>
+    <button class="btn-sm" (click)="toggleManual()">
+      {{ manualOpen ? 'Fermer' : 'Enregistrer une prestation' }}
+    </button>
+  </div>
+
+  @if (manualOpen) {
+    <div class="panel-body">
+      <p class="manual-intro">
+        Pour reporter une prestation prise au comptoir. Elle est enregistrée
+        <strong>directement en « terminée »</strong> et compte aussitôt dans le
+        chiffre d'affaires.
+      </p>
+
+      <div class="field-grid manual-form">
+        <div class="field">
+          <label for="m-service">Prestation</label>
+          <select id="m-service" [(ngModel)]="manual.service_id">
+            <option value="">Choisir…</option>
+            @for (service of services; track service.id) {
+              <option [value]="service.id">{{ service.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="m-name">Nom du client</label>
+          <input id="m-name" type="text" [(ngModel)]="manual.client_name" placeholder="Nom et prénom">
+        </div>
+
+        <div class="field">
+          <label for="m-date">Date</label>
+          <input id="m-date" type="date" [(ngModel)]="manual.booking_date" [max]="maxManualDate">
+        </div>
+
+        <div class="field">
+          <label for="m-time">Heure</label>
+          <input id="m-time" type="time" [(ngModel)]="manual.start_time">
+        </div>
+
+        <div class="field">
+          <label for="m-phone">Téléphone <span class="optional">(facultatif)</span></label>
+          <input id="m-phone" type="tel" [(ngModel)]="manual.client_phone">
+        </div>
+
+        <div class="field">
+          <label for="m-email">Email <span class="optional">(facultatif)</span></label>
+          <input id="m-email" type="email" [(ngModel)]="manual.client_email">
+        </div>
+      </div>
+
+      <div class="manual-price">
+        <label class="check-line">
+          <input type="checkbox" [(ngModel)]="manual.discounted">
+          <span>Une remise a été appliquée</span>
+        </label>
+
+        @if (manual.discounted) {
+          <div class="field field-narrow">
+            <label for="m-discount">Remise (%)</label>
+            <input
+              id="m-discount"
+              type="number"
+              min="1"
+              max="99"
+              step="1"
+              [(ngModel)]="manual.discount_percent"
+              placeholder="20">
+          </div>
+        }
+
+        @if (manualService; as service) {
+          <div class="amount-box">
+            <span class="amount-label">Montant encaissé</span>
+            <span class="amount-value">{{ manualAmountLabel(manualAmount) }}</span>
+            @if (manual.discounted && manualAmount !== service.price) {
+              <span class="amount-base">
+                prix public {{ manualAmountLabel(service.price) }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+
+      @if (suggestedPromotion; as promotion) {
+        <p class="manual-suggestion">
+          Une promotion était en cours ce jour-là :
+          <strong>{{ promotion.name }} −{{ promotion.discount_percent }} %</strong>.
+          <button type="button" class="link-btn" (click)="applySuggestedPromotion()">
+            L'appliquer
+          </button>
+        </p>
+      }
+
+      <div class="manual-actions">
+        <button
+          class="btn-sm btn-primary-sm"
+          [disabled]="!canSaveManual || manualSaving"
+          (click)="saveManual()">
+          {{ manualSaving ? 'Enregistrement…' : 'Ajouter au chiffre d\'affaires' }}
+        </button>
+        <span class="manual-hint">
+          Vérifiez que le montant correspond à ce qui a été réglé sur place.
+        </span>
+      </div>
+    </div>
+  }
 </div>
 
 <div class="panel">
@@ -109,6 +223,10 @@
                     (click)="askComplete(booking)">
                     Terminer
                   </button>
+                } @else if (pendingLabel(booking); as pending) {
+                  <span class="action-note" title="La prestation n'est pas encore terminée">
+                    {{ pending }}
+                  </span>
                 }
                 @if (canCancel(booking)) {
                   <button

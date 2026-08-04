@@ -70,12 +70,18 @@ export class AuthService {
    * sessions » du tableau de bord Supabase, seul opposable côté serveur.
    */
   private watchSessionAge(): void {
-    setInterval(() => this.enforceSessionMaxAge(), SESSION_CHECK_INTERVAL_MS);
+    // Hors zone Angular : un minuteur qui tourne toute la journée y
+    // déclencherait une détection de changement à chaque tour, pour ne rien
+    // faire dans l'immense majorité des cas. `enforceSessionMaxAge` rentre
+    // explicitement dans la zone le jour où il a quelque chose à annoncer.
+    this.ngZone.runOutsideAngular(() => {
+      setInterval(() => this.enforceSessionMaxAge(), SESSION_CHECK_INTERVAL_MS);
 
-    // Un onglet en arrière-plan voit ses minuteurs ralentis par le navigateur :
-    // on recontrôle au retour, sinon l'expiration passerait inaperçue.
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) this.enforceSessionMaxAge();
+      // Un onglet en arrière-plan voit ses minuteurs ralentis par le navigateur :
+      // on recontrôle au retour, sinon l'expiration passerait inaperçue.
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) this.enforceSessionMaxAge();
+      });
     });
   }
 
@@ -112,13 +118,6 @@ export class AuthService {
 
     await this.signOut();
     this.ngZone.run(() => this.sessionExpiredSubject.next());
-  }
-
-  /** Temps restant en millisecondes, null si aucune session suivie. */
-  get sessionTimeLeftMs(): number | null {
-    const started = this.readSessionStart();
-    if (!started || !this.currentUserSubject.value) return null;
-    return Math.max(SESSION_MAX_AGE_MS - (Date.now() - started.startedAt), 0);
   }
 
   private setUser(user: User | null): void {
@@ -178,10 +177,6 @@ export class AuthService {
 
   get isAuthenticated(): boolean {
     return !!this.currentUserSubject.value;
-  }
-
-  get isInitialized(): boolean {
-    return this.currentUserSubject.value !== undefined;
   }
 
   getUserName(): string {

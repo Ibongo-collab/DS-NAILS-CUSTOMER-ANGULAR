@@ -1,4 +1,5 @@
-import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, NgZone, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -44,6 +45,8 @@ export class SettingsComponent implements OnInit {
   private initialName = '';
   private initialGender: Gender | null = null;
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private authService: AuthService,
     private router: Router,
@@ -68,19 +71,21 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit(): void {
     // Le profil peut ne pas être encore résolu au premier rendu
-    this.authService.profile$.subscribe(profile => {
-      if (profile === undefined) return;
+    this.authService.profile$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(profile => {
+        if (profile === undefined) return;
 
-      this.currentEmail = this.authService.getUserEmail();
-      this.fullName = profile?.full_name || this.authService.getUserName();
-      this.gender = profile?.gender ?? null;
+        this.currentEmail = this.authService.getUserEmail();
+        this.fullName = profile?.full_name || this.authService.getUserName();
+        this.gender = profile?.gender ?? null;
 
-      this.initialName = this.fullName;
-      this.initialGender = this.gender;
+        this.initialName = this.fullName;
+        this.initialGender = this.gender;
 
-      this.loading = false;
-      this.cdr.detectChanges();
-    });
+        this.loading = false;
+        this.cdr.detectChanges();
+      });
   }
 
   // ==================== INFORMATIONS ====================

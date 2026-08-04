@@ -2,6 +2,210 @@
   <div class="alert alert-error">{{ error }}</div>
 }
 
+<!-- Catégories : gestion et cibles de dépôt -->
+<div class="panel">
+  <div class="panel-head">
+    <h2>Catégories</h2>
+    <span class="panel-note">Glissez une étiquette d'une colonne à l'autre, ou utilisez « + Ajouter »</span>
+  </div>
+
+  <div class="panel-body">
+    <div class="filters">
+      <div class="field">
+        <label for="new-category">Nouvelle catégorie</label>
+        <input
+          id="new-category"
+          type="text"
+          [(ngModel)]="newCategoryName"
+          (keyup.enter)="createCategory()"
+          placeholder="Onglerie, Coiffure…">
+      </div>
+      <button
+        class="btn-sm btn-primary-sm"
+        [disabled]="!newCategoryName.trim() || creatingCategory"
+        (click)="createCategory()">
+        {{ creatingCategory ? 'Ajout…' : 'Ajouter' }}
+      </button>
+    </div>
+
+    @if (!categories.length) {
+      <p class="state">
+        Aucune catégorie pour l'instant. Créez-en une : une prestation ne peut
+        pas être ajoutée sans catégorie.
+      </p>
+    } @else {
+      <div class="board">
+
+        @for (category of categories; track category.id) {
+          <div
+            class="column"
+            [class.hovered]="dropTargetId === category.id"
+            (dragover)="onCategoryDragOver($event, category.id)"
+            (dragleave)="onCategoryDragLeave(category.id)"
+            (drop)="onCategoryDrop($event, category.id)">
+
+            @if (editingCategoryId === category.id) {
+              <div class="column-head">
+                <input
+                  class="column-input"
+                  type="text"
+                  [(ngModel)]="categoryDraftName"
+                  (keyup.enter)="saveCategory(category)"
+                  [attr.aria-label]="'Nouveau nom de ' + category.name">
+              </div>
+              <div class="column-actions">
+                <button
+                  class="btn-sm btn-primary-sm"
+                  [disabled]="busyCategoryId === category.id"
+                  (click)="saveCategory(category)">
+                  Enregistrer
+                </button>
+                <button class="btn-sm" (click)="cancelCategoryEdit()">Annuler</button>
+              </div>
+            } @else {
+              <div class="column-head">
+                <span class="column-name">{{ category.name }}</span>
+                <span class="column-count">{{ servicesInCategory(category.id).length }}</span>
+              </div>
+
+              <div class="column-actions">
+                <button class="btn-sm btn-primary-sm" (click)="openPicker(category)">
+                  + Ajouter
+                </button>
+                <button
+                  class="btn-sm"
+                  [disabled]="busyCategoryId === category.id"
+                  (click)="startCategoryEdit(category)">
+                  Renommer
+                </button>
+                <button
+                  class="btn-sm btn-danger"
+                  [disabled]="busyCategoryId === category.id"
+                  (click)="removeCategory(category)">
+                  Supprimer
+                </button>
+              </div>
+            }
+
+            <ul class="chips">
+              @for (service of servicesInCategory(category.id); track service.id) {
+                <li
+                  class="chip"
+                  draggable="true"
+                  [class.dragged]="draggedServiceId === service.id"
+                  (dragstart)="onServiceDragStart($event, service)"
+                  (dragend)="onServiceDragEnd()">
+                  <span class="chip-grip" aria-hidden="true">⠿</span>
+                  <span class="chip-name">{{ service.name }}</span>
+                </li>
+              } @empty {
+                <li class="chips-empty">Déposez une prestation ici</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <!-- Colonne d'appoint : n'apparaît que si des prestations s'y trouvent.
+             Une catégorie étant obligatoire à la création, ce cas ne survient
+             qu'après la suppression d'une catégorie, ou pour les prestations
+             créées avant leur mise en place. -->
+        @if (uncategorizedCount) {
+          <div class="column column-none">
+            <div class="column-head">
+              <span class="column-name">À ranger</span>
+              <span class="column-count">{{ uncategorizedCount }}</span>
+            </div>
+            <p class="column-hint">
+              Ces prestations n'ont plus de catégorie. Glissez-les dans l'une des
+              colonnes, ou utilisez « + Ajouter ».
+            </p>
+
+            <ul class="chips">
+              @for (service of servicesInCategory(null); track service.id) {
+                <li
+                  class="chip"
+                  draggable="true"
+                  [class.dragged]="draggedServiceId === service.id"
+                  (dragstart)="onServiceDragStart($event, service)"
+                  (dragend)="onServiceDragEnd()">
+                  <span class="chip-grip" aria-hidden="true">⠿</span>
+                  <span class="chip-name">{{ service.name }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Sélecteur multiple : gérer le contenu d'une catégorie -->
+@if (pickerCategory) {
+  <div class="modal-overlay" (click)="closePicker()">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="picker-title"
+      (click)="$event.stopPropagation()">
+
+      <h3 class="modal-title" id="picker-title">
+        Prestations de « {{ pickerCategory.name }} »
+      </h3>
+      <p class="modal-sub">
+        Cochez pour ranger dans cette catégorie, décochez pour l'en retirer.
+      </p>
+
+      <input
+        class="picker-search"
+        type="text"
+        [(ngModel)]="pickerSearch"
+        placeholder="Rechercher une prestation">
+
+      <ul class="picker-list">
+        @for (service of pickerServices; track service.id) {
+          <li class="picker-item" [class.selected]="isPicked(service.id)">
+            <label>
+              <input
+                type="checkbox"
+                [checked]="isPicked(service.id)"
+                (change)="togglePick(service.id)">
+              <span class="picker-name">{{ service.name }}</span>
+            </label>
+
+            @if (movesFromOther(service)) {
+              <span class="picker-warn">
+                déjà dans « {{ currentCategoryOf(service)?.name }} »
+              </span>
+            } @else if (!service.category_id) {
+              <span class="picker-none">non classée</span>
+            }
+          </li>
+        } @empty {
+          <li class="chips-empty">Aucune prestation ne correspond.</li>
+        }
+      </ul>
+
+      @if (pickerMoveCount) {
+        <p class="modal-warning">
+          {{ pickerMoveCount }} prestation(s) sélectionnée(s) appartiennent déjà à une
+          autre catégorie. Une prestation ne peut en avoir qu'une : elles seront
+          <strong>déplacées</strong> ici.
+        </p>
+      }
+
+      <div class="modal-actions">
+        <button class="btn-sm" (click)="closePicker()">Annuler</button>
+        <button class="btn-sm btn-primary-sm" [disabled]="savingPicker" (click)="savePicker()">
+          {{ savingPicker ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 <div class="panel">
   <div class="panel-head">
     <h2>Ajouter une prestation</h2>
@@ -30,6 +234,15 @@
       <div class="field">
         <label for="new-price">Prix (FCFA)</label>
         <input id="new-price" type="number" min="0" step="500" [(ngModel)]="newDraft.price">
+      </div>
+      <div class="field">
+        <label for="new-category-select">Catégorie</label>
+        <select id="new-category-select" [(ngModel)]="newDraft.categoryId" [disabled]="!categories.length">
+          <option [ngValue]="null">— à choisir —</option>
+          @for (category of categories; track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+          }
+        </select>
       </div>
       <button class="btn-sm btn-primary-sm" [disabled]="!canCreate || creating" (click)="create()">
         {{ creating ? 'Ajout…' : 'Ajouter' }}
@@ -90,6 +303,7 @@
           <tr>
             <th>Photo</th>
             <th>Nom</th>
+            <th>Catégorie</th>
             <th>Durée</th>
             <th>Prix</th>
             <th>État</th>
@@ -129,6 +343,18 @@
                   }
                 </td>
                 <td><input type="text" [(ngModel)]="editDraft.name"></td>
+                <td>
+                  <select [(ngModel)]="editDraft.categoryId">
+                    @if (!editDraft.categoryId) {
+                      <!-- Uniquement pour une prestation qui n'en a pas encore :
+                           l'option n'est pas proposée comme un choix -->
+                      <option [ngValue]="null" disabled>— à choisir —</option>
+                    }
+                    @for (category of categories; track category.id) {
+                      <option [ngValue]="category.id">{{ category.name }}</option>
+                    }
+                  </select>
+                </td>
                 <td>
                   <div class="duration-inputs">
                     <label class="duration-unit">
@@ -172,6 +398,11 @@
                   }
                 </td>
                 <td class="cell-strong">{{ service.name }}</td>
+                <td>
+                  <span class="category-tag" [class.none]="!service.category_id">
+                    {{ categoryName(service.category_id) }}
+                  </span>
+                </td>
                 <td>{{ formatDuration(service.duration_minutes) }}</td>
                 <td>{{ service.price }} FCFA</td>
                 <td>
@@ -194,7 +425,7 @@
             }
           } @empty {
             <tr>
-              <td colspan="6" class="state">Aucune prestation enregistrée.</td>
+              <td colspan="7" class="state">Aucune prestation enregistrée.</td>
             </tr>
           }
         </tbody>

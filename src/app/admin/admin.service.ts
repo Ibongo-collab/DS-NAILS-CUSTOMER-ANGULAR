@@ -1,6 +1,15 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../services/supabase.service';
-import { BlockedSlot, Booking, BookingStatus, OpeningHours, Service } from '../models/booking.model';
+import {
+  BlockedSlot,
+  Booking,
+  BookingStatus,
+  OpeningHours,
+  Service,
+  ServiceCategory,
+  Promotion
+} from '../models/booking.model';
+import { todayString } from '../utils/date';
 
 export interface AdminStats {
   pending: number;
@@ -146,18 +155,13 @@ export class AdminService {
     return { success: true };
   }
 
-  async deleteBooking(bookingId: string): Promise<AdminResult> {
-    const { error } = await this.supabase.client
-      .from('bookings')
-      .delete()
-      .eq('id', bookingId);
-
-    if (error) return this.fail(error, 'Impossible de supprimer la réservation.');
-    return { success: true };
-  }
+  // Aucune méthode de suppression de réservation, volontairement : l'historique
+  // fonde le chiffre d'affaires et la comptabilité. Une réservation qui n'a pas
+  // lieu passe au statut « annulée » et reste consultable.
+  // La base l'interdit également (cf. supabase-protect-bookings.sql).
 
   computeStats(bookings: Booking[]): AdminStats {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayString();
     return {
       pending: bookings.filter(b => b.status === 'pending').length,
       confirmed: bookings.filter(b => b.status === 'confirmed').length,
@@ -358,6 +362,173 @@ export class AdminService {
       return this.fail(error, 'Impossible de supprimer la prestation.');
     }
     return { success: true };
+  }
+
+  // ==================== CATÉGORIES ====================
+
+  async getCategories(): Promise<ServiceCategory[]> {
+    const { data, error } = await this.supabase.client
+      .from('service_categories')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (error || !data) {
+      console.error('Erreur lors de la récupération des catégories:', error);
+      return [];
+    }
+    return data as ServiceCategory[];
+  }
+
+  async createCategory(name: string): Promise<AdminResult> {
+    const { error } = await this.supabase.client
+      .from('service_categories')
+      .insert({ name });
+
+    if (error) {
+      // 23505 = index unique : une catégorie du même nom existe déjà
+      if ((error as { code?: string }).code === '23505') {
+        return { success: false, error: 'Une catégorie porte déjà ce nom.' };
+      }
+      return this.fail(error, 'Impossible de créer la catégorie.');
+    }
+    return { success: true };
+  }
+
+  async renameCategory(id: string, name: string): Promise<AdminResult> {
+    const { data, error } = await this.supabase.client
+      .from('service_categories')
+      .update({ name })
+      .eq('id', id)
+      .select('id');
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        return { success: false, error: 'Une catégorie porte déjà ce nom.' };
+      }
+      return this.fail(error, 'Impossible de renommer la catégorie.');
+    }
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Modification refusée. Vérifiez vos droits administrateur.' };
+    }
+    return { success: true };
+  }
+
+  /** Les prestations rattachées ne sont pas supprimées : elles redeviennent non classées. */
+  async deleteCategory(id: string): Promise<AdminResult> {
+    const { error } = await this.supabase.client
+      .from('service_categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) return this.fail(error, 'Impossible de supprimer la catégorie.');
+    return { success: true };
+  }
+
+  // ==================== SAISIE MANUELLE ====================
+
+  /**
+   * Enregistre une prestation réalisée au comptoir, directement en « terminée ».
+   *
+   * C'est le pendant du cahier papier : la remise transmise est celle réellement
+   * consentie sur place, pas la promotion en cours. Le montant obtenu entre
+   * aussitôt dans le chiffre d'affaires.
+   */
+  async createManualBooking(entry: {
+    service_id: string;
+    client_name: string;
+    booking_date: string;
+    start_time: string;
+    discount_percent: number;
+    client_phone?: string;
+    client_email?: string;
+    notes?: string;
+  }): Promise<AdminResult> {
+    const { error } = await this.supabase.client.rpc('create_manual_booking', {
+      p_service_id: entry.service_id,
+      p_client_name: entry.client_name,
+      p_booking_date: entry.booking_date,
+      p_start_time: entry.start_time,
+      p_discount_percent: entry.discount_percent,
+      p_client_phone: entry.client_phone || null,
+      p_client_email: entry.client_email || null,
+      p_notes: entry.notes || null
+    });
+
+    if (error) {
+      // Les messages levés par la fonction sont déjà rédigés pour l'écran
+      const code = (error as { code?: string }).code;
+      if (code === 'P0001' || code === 'P0002' || code === 'P0003') {
+        return { success: false, error: error.message };
+      }
+      return this.fail(error, 'Impossible d\'enregistrer la prestation.');
+    }
+    return { success: true };
+  }
+
+  // ==================== PROMOTIONS ====================
+
+  /** Les plus récentes d'abord, promotions passées comprises. */
+  async getPromotions(): Promise<Promotion[]> {
+    const { data, error } = await this.supabase.client
+      .from('promotions')
+      .select('*')
+      .order('starts_on', { ascending: false });
+
+    if (error || !data) {
+      console.error('Erreur lors de la récupération des promotions:', error);
+      return [];
+    }
+    return data as Promotion[];
+  }
+
+  async createPromotion(promotion: Partial<Promotion>): Promise<AdminResult> {
+    const { error } = await this.supabase.client
+      .from('promotions')
+      .insert(promotion);
+
+    if (error) return this.fail(error, this.promotionError(error));
+    return { success: true };
+  }
+
+  async updatePromotion(id: string, changes: Partial<Promotion>): Promise<AdminResult> {
+    const { data, error } = await this.supabase.client
+      .from('promotions')
+      .update(changes)
+      .eq('id', id)
+      .select('id');
+
+    if (error) return this.fail(error, this.promotionError(error));
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Modification refusée. Vérifiez vos droits administrateur.' };
+    }
+    return { success: true };
+  }
+
+  /**
+   * Supprimer une promotion ne réécrit aucun chiffre d'affaires : le prix des
+   * réservations déjà prises est figé dans `price_at_booking`.
+   */
+  async deletePromotion(id: string): Promise<AdminResult> {
+    const { error } = await this.supabase.client
+      .from('promotions')
+      .delete()
+      .eq('id', id);
+
+    if (error) return this.fail(error, 'Impossible de supprimer la promotion.');
+    return { success: true };
+  }
+
+  /** Traduit les contraintes de la table en message lisible. */
+  private promotionError(error: unknown): string {
+    const message = String((error as { message?: string })?.message || '');
+
+    if (message.includes('promotion_dates_ordered')) {
+      return 'La date de fin doit être postérieure à la date de début.';
+    }
+    if (message.includes('discount_percent')) {
+      return 'La remise doit être comprise entre 1 et 100 %.';
+    }
+    return 'Impossible d\'enregistrer la promotion.';
   }
 
   // ==================== HORAIRES ====================

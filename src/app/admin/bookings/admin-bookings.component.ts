@@ -1,9 +1,23 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService, AdminStats } from '../admin.service';
-import { Booking, BookingStatus } from '../../models/booking.model';
+import { Booking, BookingStatus, Promotion, Service } from '../../models/booking.model';
+import { applyDiscount, bestPromotion } from '../../services/pricing';
+import { parseDateString, todayString } from '../../utils/date';
 
 type StatusFilter = BookingStatus | 'all';
+
+/** Prestation réalisée au comptoir, reportée du cahier. */
+interface ManualEntry {
+  service_id: string;
+  client_name: string;
+  client_phone: string;
+  client_email: string;
+  booking_date: string;
+  start_time: string;
+  discounted: boolean;
+  discount_percent: number | null;
+}
 
 @Component({
   selector: 'app-admin-bookings',
@@ -36,6 +50,16 @@ export class AdminBookingsComponent implements OnInit {
     { value: 'cancelled', label: 'Annulées' }
   ];
 
+  // --- Saisie manuelle ---
+
+  /** Le formulaire n'est déplié qu'à la demande : l'écran est déjà dense. */
+  manualOpen = false;
+  manualSaving = false;
+  manualNotice = '';
+  services: Service[] = [];
+  private promotions: Promotion[] = [];
+  manual: ManualEntry = this.emptyEntry();
+
   constructor(private adminService: AdminService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
@@ -47,6 +71,22 @@ export class AdminBookingsComponent implements OnInit {
     this.bookings = await this.adminService.getBookings();
     this.stats = this.adminService.computeStats(this.bookings);
     this.loading = false;
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Prestations et promotions ne servent qu'à la saisie manuelle : on ne les
+   * charge qu'à l'ouverture du formulaire, pas à chaque affichage de la liste.
+   */
+  private async loadFormData(): Promise<void> {
+    if (this.services.length) return;
+
+    const [services, promotions] = await Promise.all([
+      this.adminService.getServices(),
+      this.adminService.getPromotions()
+    ]);
+    this.services = services;
+    this.promotions = promotions;
     this.cdr.detectChanges();
   }
 
@@ -78,8 +118,54 @@ export class AdminBookingsComponent implements OnInit {
     return booking.status === 'pending';
   }
 
+  /**
+   * Instant d'un créneau, en heure locale.
+   *
+   * `2026-08-04T14:30` sans indicateur de fuseau est interprété dans le fuseau
+   * du navigateur : c'est bien l'heure du salon qu'on veut comparer, pas UTC.
+   */
+  private momentOf(date: string, time: string | undefined): number | null {
+    // Date construite composant par composant plutôt qu'en concaténant une
+    // chaîne : `new Date('...')` dépend du format exact reçu et bascule en UTC
+    // au moindre écart, ce qui décalerait le seuil de plusieurs heures.
+    const [year, month, day] = String(date || '').split('-').map(Number);
+    const [hours, minutes] = String(time || '').split(':').map(Number);
+
+    if (![year, month, day, hours, minutes].every(Number.isFinite)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+    return new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
+  }
+
+  private hasStarted(booking: Booking): boolean {
+    const start = this.momentOf(booking.booking_date, booking.start_time);
+    return start !== null && start <= Date.now();
+  }
+
+  /** Vrai une fois la prestation terminée, heure de fin comprise. */
+  private hasEnded(booking: Booking): boolean {
+    // Repli sur l'heure de début si la fin manque : mieux vaut un seuil
+    // approché qu'une réservation impossible à clôturer
+    const end = this.momentOf(booking.booking_date, booking.end_time)
+      ?? this.momentOf(booking.booking_date, booking.start_time);
+    return end !== null && end <= Date.now();
+  }
+
+  /**
+   * Clôturer n'a de sens qu'une fois la prestation achevée : plus tôt, elle
+   * n'a pas été rendue, et la comptabiliser fausserait le chiffre d'affaires.
+   */
   canComplete(booking: Booking): boolean {
-    return booking.status === 'confirmed';
+    return booking.status === 'confirmed' && this.hasEnded(booking);
+  }
+
+  /**
+   * Remplace le bouton tant que la prestation n'est pas achevée, en distinguant
+   * ce qui n'a pas commencé de ce qui est en cours.
+   */
+  pendingLabel(booking: Booking): string {
+    if (booking.status !== 'confirmed' || this.hasEnded(booking)) return '';
+    return this.hasStarted(booking) ? 'En cours' : 'À venir';
   }
 
   canCancel(booking: Booking): boolean {
@@ -145,6 +231,143 @@ export class AdminBookingsComponent implements OnInit {
     await this.load(false);
   }
 
+  // ==================== SAISIE MANUELLE ====================
+
+  private emptyEntry(): ManualEntry {
+    return {
+      service_id: '',
+      client_name: '',
+      client_phone: '',
+      client_email: '',
+      booking_date: this.todayIso(),
+      start_time: '',
+      discounted: false,
+      discount_percent: null
+    };
+  }
+
+  /** Une prestation réalisée ne peut pas l'être à une date future. */
+  get maxManualDate(): string {
+    return this.todayIso();
+  }
+
+  async toggleManual(): Promise<void> {
+    this.manualOpen = !this.manualOpen;
+    this.error = '';
+    this.manualNotice = '';
+
+    if (!this.manualOpen) {
+      this.manual = this.emptyEntry();
+      return;
+    }
+    await this.loadFormData();
+  }
+
+  get manualService(): Service | null {
+    return this.services.find(s => s.id === this.manual.service_id) || null;
+  }
+
+  /**
+   * Promotion qui était en vigueur ce jour-là pour cette prestation.
+   * Simple rappel : c'est le montant réellement encaissé qui fait foi, pas elle.
+   */
+  get suggestedPromotion(): Promotion | null {
+    if (!this.manual.service_id || !this.manual.booking_date) return null;
+    return bestPromotion(this.promotions, this.manual.service_id, this.manual.booking_date);
+  }
+
+  applySuggestedPromotion(): void {
+    const promotion = this.suggestedPromotion;
+    if (!promotion) return;
+
+    this.manual.discounted = true;
+    this.manual.discount_percent = Number(promotion.discount_percent);
+  }
+
+  /** Remise retenue pour le calcul : zéro tant que la case n'est pas cochée. */
+  private get manualDiscount(): number {
+    if (!this.manual.discounted) return 0;
+    const percent = Number(this.manual.discount_percent);
+    return Number.isFinite(percent) ? percent : 0;
+  }
+
+  /** Montant qui sera comptabilisé, recalculé à chaque frappe. */
+  get manualAmount(): number {
+    const service = this.manualService;
+    if (!service) return 0;
+    return applyDiscount(Number(service.price) || 0, this.manualDiscount);
+  }
+
+  manualAmountLabel(amount: number): string {
+    return `${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`;
+  }
+
+  /** Ce qui manque pour enregistrer, ou '' si la saisie est complète. */
+  private get manualProblem(): string {
+    if (!this.manual.service_id) return 'Choisissez la prestation réalisée.';
+    if (!this.manual.client_name.trim()) return 'Indiquez le nom de la cliente ou du client.';
+    if (!this.manual.booking_date) return 'Indiquez la date de la prestation.';
+    if (this.manual.booking_date > this.todayIso()) {
+      return 'Une prestation réalisée ne peut pas porter une date future.';
+    }
+    if (!this.manual.start_time) return 'Indiquez l\'heure de la prestation.';
+
+    if (this.manual.discounted) {
+      const percent = Number(this.manual.discount_percent);
+      if (!Number.isFinite(percent) || percent <= 0 || percent >= 100) {
+        return 'La remise doit être comprise entre 1 et 99 %.';
+      }
+    }
+    return '';
+  }
+
+  get canSaveManual(): boolean {
+    return !this.manualProblem;
+  }
+
+  async saveManual(): Promise<void> {
+    const problem = this.manualProblem;
+    if (problem) {
+      this.error = problem;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.manualSaving = true;
+    this.error = '';
+    this.manualNotice = '';
+    this.cdr.detectChanges();
+
+    const amount = this.manualAmount;
+    const result = await this.adminService.createManualBooking({
+      service_id: this.manual.service_id,
+      client_name: this.manual.client_name,
+      booking_date: this.manual.booking_date,
+      start_time: this.manual.start_time,
+      discount_percent: this.manualDiscount,
+      client_phone: this.manual.client_phone.trim(),
+      client_email: this.manual.client_email.trim(),
+      notes: 'Prestation enregistrée manuellement (réservation sur place).'
+    });
+
+    this.manualSaving = false;
+
+    if (!result.success) {
+      this.error = result.error || 'L\'enregistrement a échoué.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.manualNotice =
+      `Prestation enregistrée : ${this.manualAmountLabel(amount)} ajoutés au chiffre d'affaires.`;
+    this.manual = this.emptyEntry();
+    await this.load(false);
+  }
+
+  private todayIso(): string {
+    return todayString();
+  }
+
   statusLabel(status: string): string {
     const labels: Record<string, string> = {
       pending: 'En attente',
@@ -156,7 +379,7 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString + 'T00:00:00');
+    const date = parseDateString(dateString);
     const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
     const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
     return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;

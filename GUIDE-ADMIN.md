@@ -7,8 +7,8 @@ visible par les clientes.
 **Accès** : connectez-vous, puis cliquez sur **Admin** dans la barre du haut.
 Le bouton n'apparaît que pour un compte administrateur.
 
-Cinq onglets : **Réservations**, **Statistiques**, **Prestations**, **Horaires**,
-**Indisponibilités**.
+Sept onglets : **Réservations**, **Statistiques**, **Prestations**,
+**Promotions**, **Horaires**, **Indisponibilités**, **Notifications**.
 
 ---
 
@@ -32,6 +32,9 @@ Conséquence pratique : **si vous n'utilisez jamais le bouton « Terminer », vo
 chiffre d'affaires restera à zéro.** Prenez l'habitude de clôturer les rendez-vous
 passés.
 
+Et son pendant : les prestations prises **au comptoir** n'existent nulle part
+tant que vous ne les saisissez pas. Le § 1 explique comment les reporter.
+
 ---
 
 ## 1. Réservations
@@ -45,7 +48,11 @@ L'écran de travail quotidien.
 | **En attente** | Réservations à valider — c'est votre file d'attente |
 | **Confirmées** | Rendez-vous validés, pas encore réalisés |
 | **Aujourd'hui** | Rendez-vous du jour (en attente + confirmés) |
-| **À venir** | Rendez-vous des jours suivants |
+| **Jours suivants** | Rendez-vous à partir de demain |
+
+Ces quatre compteurs ne comptent que ce qui reste à traiter : une réservation
+terminée ou annulée n'y figure plus, et une prestation saisie à la main n'y
+apparaît jamais.
 
 ### Filtrer la liste
 
@@ -62,11 +69,13 @@ aujourd'hui, statut **Confirmées**.
 **Confirmer** — disponible sur une réservation en attente. Elle passe en
 « Confirmé ». Sans effet comptable.
 
-**Terminer** — disponible sur une réservation confirmée. **Une fenêtre de
-confirmation s'ouvre** et rappelle la cliente, la prestation, la date et surtout
-**le montant qui sera comptabilisé**. Validez seulement si la prestation a été
-réalisée *et* réglée : ce montant entre immédiatement dans le chiffre d'affaires,
-le panier moyen et les classements.
+**Terminer** — disponible sur une réservation confirmée, **une fois la prestation
+achevée**, c'est-à-dire son heure de fin passée. Avant, le bouton n'apparaît
+pas : la mention « À venir » ou « En cours » prend sa place, car une prestation
+qui n'est pas rendue ne peut pas être encaissée. **Une fenêtre de confirmation s'ouvre** et rappelle la cliente, la
+prestation, la date et surtout **le montant qui sera comptabilisé**. Validez
+seulement si la prestation a été réalisée *et* réglée : ce montant entre
+immédiatement dans le chiffre d'affaires, le panier moyen et les classements.
 
 **Annuler** — disponible sur une réservation en attente ou confirmée. Le créneau
 est libéré et redevient réservable. Action immédiate, sans confirmation.
@@ -76,6 +85,44 @@ est libéré et redevient réservable. Action immédiate, sans confirmation.
 
 **Actualiser** recharge la liste — utile si vous avez laissé la page ouverte
 pendant que des clientes réservaient.
+
+### Enregistrer une prestation faite sur place
+
+Le salon reçoit plus de monde au comptoir qu'en ligne. Sans report, le chiffre
+d'affaires affiché ne montre qu'une partie de votre activité. Le panneau
+**« Prestation réalisée sur place »**, en haut de l'écran, sert à recopier le
+cahier.
+
+Cliquez sur **Enregistrer une prestation** pour déplier le formulaire.
+
+| Champ | |
+|---|---|
+| **Prestation** | Celle qui a été réalisée. Les prestations masquées restent proposées : vous pouvez reporter une ancienne prestation |
+| **Nom du client** | Obligatoire |
+| **Date** | Aujourd'hui ou un jour passé. Une date future est refusée : une prestation à venir n'est pas encore réalisée |
+| **Heure** | Heure de début |
+| **Téléphone**, **Email** | Facultatifs |
+
+Ensuite, la partie qui touche à la comptabilité :
+
+- Cochez **« Une remise a été appliquée »** seulement s'il y a eu une remise, et
+  saisissez le pourcentage consenti.
+- Le **montant encaissé** s'affiche à droite et se recalcule à chaque frappe.
+  C'est lui qui entrera dans vos comptes : vérifiez qu'il correspond à ce qui a
+  été réglé avant de valider.
+
+Si une promotion était en cours ce jour-là pour cette prestation, un bandeau
+vous le rappelle, avec un bouton **« L'appliquer »**. Elle n'est jamais cochée
+d'office : c'est ce que la cliente a **réellement payé** qui fait foi, pas ce
+qu'elle aurait dû payer.
+
+**Ajouter au chiffre d'affaires** enregistre la prestation directement en
+« Terminé ». Elle apparaît aussitôt dans la liste et dans les statistiques.
+
+> Une saisie manuelle n'est soumise à aucun contrôle de créneau : ni horaires
+> d'ouverture, ni indisponibilité, ni chevauchement avec un autre rendez-vous.
+> C'est voulu — le cahier fait autorité, et vous devez pouvoir reporter un
+> dimanche même si le salon est marqué fermé.
 
 ---
 
@@ -158,19 +205,38 @@ moyen de recontact.
 ### Deux précisions sur les montants
 
 **Le prix est figé au moment de la réservation.** Si vous augmentez le tarif d'une
-prestation, les réservations déjà passées gardent l'ancien prix. Votre historique
-ne se réécrit pas.
+prestation — ou si vous lancez, puis arrêtez une promotion — les réservations
+déjà passées gardent le prix qui leur a été appliqué. Votre historique ne se
+réécrit pas.
 
 **Tout repose sur le statut « Terminé ».** C'est le seul geste qui alimente la
-comptabilité.
+comptabilité. Les prestations saisies à la main (§ 1) y entrent directement :
+en ligne ou au comptoir, tout se retrouve dans les mêmes chiffres.
 
 ---
 
 ## 3. Prestations
 
+### Les catégories, en haut de l'écran
+
+Côté client, l'accueil ne montre **que les catégories**. C'est en ouvrant l'une
+d'elles qu'on découvre ses prestations. Une prestation sans catégorie
+**n'apparaît nulle part** : le bloc « Non classées » est votre liste des oublis.
+
+- **Nouvelle catégorie** : tapez le nom, **Ajouter**.
+- **Ajouter des prestations** ouvre une fenêtre où vous cochez plusieurs
+  prestations d'un coup. Une prestation qui appartient déjà ailleurs est
+  signalée « déjà dans "…" » — la valider la **déplace**, elle ne sera pas dans
+  les deux.
+- Vous pouvez aussi **faire glisser** une prestation d'une catégorie à l'autre.
+- **Renommer**, **Supprimer** : supprimer une catégorie ne supprime aucune
+  prestation, elles redeviennent simplement non classées — et disparaissent du
+  site tant qu'elles ne sont pas reclassées.
+
 ### Ajouter une prestation
 
 - **Nom** — celui que verront les clientes.
+- **Catégorie** — obligatoire, c'est elle qui rend la prestation visible.
 - **Heures** et **Minutes** — durée séparée en deux champs. L'aperçu sous la
   saisie confirme le résultat (« Durée : 1 h 30 »). Les minutes vont de 0 à 59 :
   au-delà, utilisez le champ Heures.
@@ -195,14 +261,71 @@ prestation que vous ne proposez plus temporairement.
 
 **Supprimer** — définitif, avec demande de confirmation. Si des réservations y
 sont rattachées, la suppression est **refusée** et un message vous invite à
-masquer la prestation à la place : supprimer effacerait l'historique associé.
+masquer la prestation à la place.
+
+> ⚠ **En cas de doute, masquez plutôt que de supprimer.** Une prestation
+> supprimée emporte le lien avec son historique, donc une part de votre chiffre
+> d'affaires. Masquer produit exactement le même effet côté client — la
+> prestation disparaît du site — sans rien perdre.
 
 > Une prestation sans photo s'affiche avec un emplacement gris côté client.
 > Pensez à en ajouter une pour chaque prestation.
 
 ---
 
-## 4. Horaires
+## 4. Promotions
+
+Une remise en pourcentage, sur **toutes** les prestations ou sur **une seule**,
+entre deux dates.
+
+### Créer une promotion
+
+| Champ | |
+|---|---|
+| **Nom** | Visible par la cliente sur l'écran de confirmation (« Offre de rentrée ») |
+| **Remise (%)** | De 1 à 100 |
+| **S'applique à** | « Toutes les prestations », ou une prestation précise |
+| **Début**, **Fin** | Les deux dates sont **incluses** |
+
+**La remise s'applique selon la date du rendez-vous, pas la date de
+réservation.** Une cliente qui réserve aujourd'hui pour un rendez-vous après la
+fin de la promotion paie le prix plein — et inversement.
+
+### Ce que voit la cliente
+
+Sur la liste des prestations, le prix public apparaît **barré**, suivi du prix
+remisé et d'une pastille « −20 % ». L'écran de confirmation affiche le montant
+exact qui sera facturé, avec le nom de la promotion.
+
+### Le tableau
+
+Chaque promotion porte un état, calculé à partir des dates :
+
+| État | |
+|---|---|
+| **En cours** | Elle s'applique aujourd'hui |
+| **Programmée** | Sa date de début n'est pas encore arrivée |
+| **Terminée** | Sa date de fin est passée |
+| **Désactivée** | Vous l'avez mise en pause |
+
+- **Modifier** rend la ligne éditable.
+- **Désactiver** l'interrompt sans la supprimer : les prix reviennent au tarif
+  public. **Activer** la remet en service.
+- **Supprimer** l'efface définitivement.
+
+### Deux règles à connaître
+
+**Si deux promotions se chevauchent, c'est la plus avantageuse qui s'applique —
+elles ne s'additionnent jamais.** Une promotion générale à 20 % et une promotion
+ciblée à 35 % sur les Braids donnent 35 % sur les Braids, pas 55 %.
+
+**Supprimer ou désactiver une promotion ne change rien aux réservations déjà
+prises.** Leur prix a été figé au moment de la réservation. Votre chiffre
+d'affaires passé ne se réécrit jamais.
+
+---
+
+## 5. Horaires
 
 Les horaires d'ouverture, un jour par ligne.
 
@@ -231,7 +354,7 @@ rendez-vous possibles.
 
 ---
 
-## 5. Indisponibilités
+## 6. Indisponibilités
 
 Pour bloquer un moment précis sans toucher aux horaires habituels : congés,
 formation, rendez-vous personnel.
@@ -258,6 +381,35 @@ selon la prestation.
 
 Les indisponibilités passées restent affichées, en grisé, et peuvent être
 supprimées à tout moment.
+
+---
+
+## 7. Notifications
+
+Les messages WhatsApp envoyés au salon et aux clientes.
+
+> **Rien ne part encore.** L'envoi attend un numéro WhatsApp dédié à
+> l'application. En attendant, les messages sont bel et bien rédigés et
+> conservés : cette page vous montre exactement ce qui sera envoyé, à qui et
+> quand. Le jour où le numéro sera prêt, les messages en attente partiront sans
+> qu'aucun soit perdu.
+
+### Réglages
+
+**Numéro qui reçoit les alertes du salon** — le vôtre. C'est là qu'arriveront
+les avis de nouvelle réservation.
+
+Deux interrupteurs :
+
+| | Ce qu'il déclenche |
+|---|---|
+| **Alerter le salon** | Nouvelle réservation, annulation par une cliente |
+| **Prévenir les clientes** | Confirmation, annulation par le salon, rappel 24 h avant le rendez-vous |
+
+### Journal des messages
+
+Quand, quel événement, destinataire, contenu, état. Un message **En attente**
+n'est pas une erreur : c'est la file, normale tant que l'envoi n'est pas activé.
 
 ---
 

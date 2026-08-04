@@ -1,5 +1,3 @@
-@use '../admin-ui' as *;
-
 /* Bandeau d'état du dispositif : disparaît dès qu'un envoi réel a eu lieu. */
 .banner {
   border-color: rgba(138, 97, 0, 0.25);

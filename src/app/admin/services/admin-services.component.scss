@@ -1,8 +1,16 @@
-@use '../admin-ui' as *;
-
-td input {
+/* Ligne d'édition : chaque champ reçoit une largeur minimale à la mesure de ce
+   qu'il contient. Une valeur unique pour tous rendait le nom illisible sans
+   pour autant servir aux champs numériques. */
+td input,
+td select {
   width: 100%;
   min-width: 90px;
+}
+
+tr.editing {
+  td:nth-child(2) input { min-width: 180px; }   // Nom
+  td:nth-child(3) select { min-width: 150px; }  // Catégorie
+  td:nth-child(5) input { min-width: 110px; }   // Prix
 }
 
 /* Ligne en cours d'édition : l'aperçu de durée rend la cellule Durée plus
@@ -12,6 +20,240 @@ td input {
    sans rien déplacer. */
 tr.editing td {
   vertical-align: top;
+}
+
+// --- Tableau de classement ---
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  border: 2px dashed rgba(105, 0, 90, 0.2);
+  border-radius: 12px;
+  background: #FDFAFD;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Cible survolée : bordure pleine et fond marqué, pour savoir où l'on dépose
+   avant de lâcher */
+.column.hovered {
+  border-style: solid;
+  border-color: #69005A;
+  background: #F8E9F6;
+}
+
+/* La réserve se distingue des vraies catégories : ce n'est pas un classement */
+.column-none {
+  border-color: rgba(105, 0, 90, 0.1);
+  background: #FAFAFA;
+}
+
+.column-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.column-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #69005A;
+  word-break: break-word;
+}
+
+.column-count {
+  flex-shrink: 0;
+  min-width: 24px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #F3E6F1;
+  color: #69005A;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.column-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+
+  .btn-sm { margin-left: 0; }
+}
+
+.column-input { width: 100%; }
+
+.column-hint {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #8A6A85;
+}
+
+// --- Étiquettes déplaçables ---
+
+.chips {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  /* Une hauteur minimale garantit une cible de dépôt même sur une colonne vide */
+  min-height: 46px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(105, 0, 90, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.84rem;
+  color: #4A2344;
+  cursor: grab;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover { box-shadow: 0 2px 6px rgba(105, 0, 90, 0.1); }
+
+  &.dragged {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
+}
+
+/* Poignée : signale que l'élément se saisit, sans texte superflu */
+.chip-grip {
+  color: #C9A4C4;
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.chip-name {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.chips-empty {
+  padding: 0.55rem 0.2rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #A78BA3;
+  text-align: center;
+}
+
+// --- Sélecteur multiple ---
+
+.picker-search {
+  width: 100%;
+  margin-bottom: 0.85rem;
+}
+
+.picker-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  /* La liste défile, pas la fenêtre : les boutons restent visibles */
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid rgba(105, 0, 90, 0.1);
+  border-radius: 10px;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(105, 0, 90, 0.07);
+
+  &:last-child { border-bottom: none; }
+  &.selected { background: #FCF4FB; }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.87rem;
+    font-weight: 500;
+    color: #4A2344;
+  }
+
+  input[type='checkbox'] {
+    width: 17px;
+    height: 17px;
+    accent-color: #69005A;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
+.picker-name { word-break: break-word; }
+
+.picker-warn {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #8A6100;
+  background: #FFF3D6;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.picker-none {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #8A6A85;
+}
+
+// --- Étiquette de catégorie dans le tableau ---
+
+.category-tag {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #F3E6F1;
+  color: #69005A;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.none {
+    background: #EFE7EE;
+    color: #8A6A85;
+    font-weight: 500;
+  }
+}
+
+/* Ligne en cours de déplacement : estompée pour matérialiser ce qu'on tient */
+tbody tr[draggable='true'] {
+  cursor: grab;
+}
+
+tbody tr.dragged {
+  opacity: 0.4;
+  cursor: grabbing;
 }
 
 // --- Durée en heures + minutes ---
@@ -54,6 +296,16 @@ tr.editing td {
    rangée pour qu'il ne recouvre pas la section suivante. */
 .field-grid {
   padding-bottom: 1.15rem;
+  /* Colonnes plus larges qu'en réglage partagé : les noms de prestation et de
+     catégorie sont longs et se retrouvaient tronqués à la saisie. */
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+
+  /* Au-delà de cette largeur, on répartit à la mesure de chaque contenu plutôt
+     qu'en colonnes égales : deux chiffres n'ont pas besoin d'autant de place
+     qu'un nom de prestation. */
+  @media (min-width: 900px) {
+    grid-template-columns: 2.2fr 0.7fr 0.7fr 1fr 1.3fr auto;
+  }
 
   .field {
     position: relative;
@@ -219,5 +471,4 @@ tr.editing td {
     font-size: 0.8rem;
   }
 }
-
 

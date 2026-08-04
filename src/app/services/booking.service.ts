@@ -10,9 +10,13 @@ import {
   TimeSlot,
   OpeningHours,
   BookingState,
-  DateAvailability
+  DateAvailability,
+  ServiceCategory,
+  Promotion,
+  PricedService
 } from '../models/booking.model';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { priceService } from './pricing';
+import { isoDayOfWeek, todayString } from '../utils/date';
 
 @Injectable({
   providedIn: 'root'
@@ -31,7 +35,6 @@ export class BookingService {
   private availableSlotsCache = new Map<string, { slots: TimeSlot[], timestamp: number }>();
   private CACHE_DURATION = 30000;
 
-  private realtimeChannel: RealtimeChannel | null = null;
 
   constructor(private supabase: SupabaseService) {}
 
@@ -53,6 +56,94 @@ export class BookingService {
         return response.data as Service[];
       })
     );
+  }
+
+  // ==================== CATÉGORIES ====================
+
+  /** Catégories proposées à la réservation, dans l'ordre alphabétique. */
+  getCategories(): Observable<ServiceCategory[]> {
+    return from(
+      this.supabase.client
+        .from('service_categories')
+        .select('*')
+        .order('name', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Erreur lors de la récupération des catégories:', response.error);
+          return [];
+        }
+        return response.data as ServiceCategory[];
+      })
+    );
+  }
+
+  getCategory(id: string): Observable<ServiceCategory | null> {
+    return from(
+      this.supabase.client.from('service_categories').select('*').eq('id', id).maybeSingle()
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Erreur lors de la récupération de la catégorie:', response.error);
+          return null;
+        }
+        return (response.data as ServiceCategory) ?? null;
+      })
+    );
+  }
+
+  getServicesByCategory(categoryId: string): Observable<Service[]> {
+    return from(
+      this.supabase.client
+        .from('services')
+        .select('*')
+        .eq('active', true)
+        .eq('category_id', categoryId)
+        .order('duration_minutes', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Erreur lors de la récupération des prestations:', response.error);
+          return [];
+        }
+        return response.data as Service[];
+      })
+    );
+  }
+
+  // ==================== PROMOTIONS ====================
+
+  /** Promotions en cours à la date donnée. Lecture publique. */
+  getActivePromotions(onDate?: string): Observable<Promotion[]> {
+    const day = onDate || todayString();
+
+    return from(
+      this.supabase.client
+        .from('promotions')
+        .select('*')
+        .eq('active', true)
+        .lte('starts_on', day)
+        .gte('ends_on', day)
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Erreur lors de la récupération des promotions:', response.error);
+          return [];
+        }
+        return response.data as Promotion[];
+      })
+    );
+  }
+
+  /**
+   * Applique la meilleure remise en vigueur à une prestation.
+   *
+   * Les promotions reçues sont déjà filtrées sur la bonne date par
+   * `getActivePromotions`. Cet affichage reste indicatif : le prix qui fait foi
+   * est celui calculé par `create_booking` et figé dans `price_at_booking`.
+   */
+  priceOf(service: Service, promotions: Promotion[]): PricedService {
+    return priceService(service, promotions);
   }
 
   // ==================== HORAIRES ====================
@@ -111,7 +202,7 @@ export class BookingService {
 
       if (!service) throw new Error('Service non trouvé');
 
-      const dayOfWeek = new Date(date).getDay() || 7;
+      const dayOfWeek = isoDayOfWeek(date);
       const { data: hours } = await this.supabase.client
         .from('opening_hours')
         .select('*')
@@ -201,7 +292,7 @@ export class BookingService {
       }
 
       for (const date of dates) {
-        const dayOfWeek = new Date(date + 'T00:00:00').getDay() || 7;
+        const dayOfWeek = isoDayOfWeek(date);
         const hours = hoursByDay.get(dayOfWeek);
 
         if (!hours || hours.is_closed) {
@@ -283,13 +374,7 @@ export class BookingService {
   }
 
   private isToday(dateString: string): boolean {
-    const today = new Date();
-    const date = new Date(dateString);
-    return (
-      date.getFullYear() === today.getFullYear() &&
-      date.getMonth() === today.getMonth() &&
-      date.getDate() === today.getDate()
-    );
+    return dateString === todayString();
   }
 
   private filterPastSlots(date: string, slots: TimeSlot[]): TimeSlot[] {
@@ -470,24 +555,9 @@ export class BookingService {
     return { success: true };
   }
 
-  // ==================== TEMPS RÉEL ====================
-
-  subscribeToBookings(date: string, callback: () => void): void {
-    this.realtimeChannel = this.supabase.subscribeToTable(
-      'bookings',
-      (_payload) => {
-        this.availableSlotsCache.clear();
-        callback();
-      },
-      `booking_date=eq.${date}`
-    );
-  }
-
-  unsubscribeFromBookings(): void {
-    if (this.realtimeChannel) {
-      this.supabase.unsubscribe(this.realtimeChannel);
-      this.realtimeChannel = null;
-    }
+  /** Force la relecture des créneaux au prochain appel. */
+  clearSlotsCache(): void {
+    this.availableSlotsCache.clear();
   }
 
   // ==================== GESTION DE L'ÉTAT ====================

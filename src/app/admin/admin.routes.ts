@@ -30,6 +30,13 @@ export const ADMIN_ROUTES: Routes = [
           import('./services/admin-services.component').then(m => m.AdminServicesComponent)
       },
       {
+        path: 'promotions',
+        loadComponent: () =>
+          import('./promotions/admin-promotions.component').then(
+            m => m.AdminPromotionsComponent
+          )
+      },
+      {
         path: 'horaires',
         loadComponent: () =>
           import('./opening-hours/admin-opening-hours.component').then(

@@ -8,11 +8,6 @@
     <h2 class="step-title">Choisissez votre horaire</h2>
     <p class="date-info">{{ formattedDate }}</p>
 
-    @if (realtimeConnected) {
-      <div class="realtime-indicator">
-        <span class="dot"></span> Mise à jour en temps réel
-      </div>
-    }
 
     @if (!loading && timeSlots.length > 0) {
       <div class="time-grid">

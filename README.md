@@ -1,11 +1,11 @@
-# 💅 Salon Belle Beauté - Système de Réservation
+# 💅 DS Nails — Système de réservation
 
-Application de réservation en ligne pour salon de beauté développée avec **Angular 20** et **Supabase**.
+Application de réservation en ligne pour le salon DS Nails, développée avec **Angular 21** et **Supabase**.
 
 ## ✨ Fonctionnalités
 
 - 📅 Réservation en ligne en 4 étapes simples
-- 🔄 **Mise à jour en temps réel** des créneaux disponibles
+- 🔄 **Créneaux tenus à jour** : les horaires déjà pris ou bloqués sont écartés
 - 📱 Interface mobile-first responsive
 - 💅 Gestion des services (manucure, pédicure, coiffure)
 - ⏰ Gestion intelligente des créneaux horaires
@@ -43,18 +43,15 @@ ng serve
 
 ### Étape 2: Configurer la base de données
 
-1. Dans Supabase, allez dans **Database > SQL Editor**
-2. Cliquez sur **New query**
-3. Copiez le contenu complet du fichier `supabase-schema.sql`
-4. Collez-le dans l'éditeur SQL
-5. Cliquez sur **Run** (ou F5)
-6. Vous devriez voir: "Success. No rows returned"
+La base se construit par une **suite de scripts SQL**, à jouer dans un ordre
+précis : plusieurs d'entre eux redéfinissent les mêmes fonctions, et les
+intervertir fait régresser la base sans lever d'erreur.
 
-✅ Votre base de données est maintenant configurée avec :
-- Les tables (services, bookings, opening_hours, blocked_slots)
-- Les données initiales (5 services prêts à l'emploi)
-- Les contraintes de sécurité
-- Les index pour les performances
+👉 **La séquence complète est dans [MIGRATIONS.md](MIGRATIONS.md).** Suivez-la
+de bout en bout.
+
+Pour chaque fichier : **Database > SQL Editor > New query**, coller le contenu,
+**Run**. La réponse attendue est « Success. No rows returned ».
 
 ### Étape 3: Récupérer les clés API
 
@@ -65,26 +62,25 @@ ng serve
 
 ### Étape 4: Configurer l'application
 
-Ouvrez le fichier `src/environments/environment.development.ts` et remplacez :
+Deux fichiers, de même contenu :
+
+- `src/environments/environment.ts` — utilisé par `ng build` (production)
+- `src/environments/environment.development.ts` — utilisé par `ng serve`,
+  substitué au premier par la configuration `development` d'angular.json
 
 ```typescript
 export const environment = {
-  production: false,
+  production: true,
   supabase: {
     url: 'https://xxxxx.supabase.co', // ← Votre Project URL
-    anonKey: 'eyJhbGc...'              // ← Votre anon key
+    anonKey: 'eyJhbGc...'              // ← Votre clé anon
   }
 };
 ```
 
-### Étape 5: Activer le temps réel
-
-1. Dans Supabase, allez dans **Database > Replication**
-2. Trouvez la table **bookings**
-3. Activez le toggle **Enable replication**
-4. Cliquez sur **Save**
-
-✅ Le temps réel est maintenant activé ! Les créneaux se mettront à jour automatiquement.
+La clé **anon** est publique par conception : elle identifie le projet et
+n'autorise rien par elle-même, ce sont les policies RLS qui décident. Ne jamais
+placer ici la clé `service_role`, qui contourne toutes les policies.
 
 ## 📱 Structure de l'application
 
@@ -94,7 +90,7 @@ src/app/
 │   ├── home/                    # Page d'accueil
 │   ├── service-selection/       # Choix du service
 │   ├── date-selection/          # Choix de la date
-│   ├── time-selection/          # Choix du créneau (+ temps réel)
+│   ├── time-selection/          # Choix du créneau
 │   ├── client-form/             # Formulaire client
 │   └── confirmation/            # Confirmation de réservation
 ├── services/
@@ -105,33 +101,37 @@ src/app/
 └── app.routes.ts                # Configuration des routes
 ```
 
-## 🔄 Comment fonctionne le temps réel ?
+## 🔄 Comment un créneau déjà pris est-il écarté ?
 
-### Architecture
+Il n'y a pas d'abonnement temps réel : la table `bookings` n'est plus lisible
+par un visiteur non connecté (`supabase-secure-bookings.sql`), donc Postgres ne
+lui diffuserait aucun changement. Trois filets se succèdent :
 
 ```
-Client 1 réserve 14h00
-        ↓
-    Supabase DB
-        ↓
-   Event broadcast
-        ↓
-Client 2 (WebSocket) ← Reçoit la notification
-        ↓
-Recharge les créneaux
-        ↓
-14h00 disparaît automatiquement
+Choix de la date  →  get_booked_intervals_range   les jours pleins sont grisés
+Choix de l'heure  →  get_booked_intervals         les créneaux pris disparaissent
+                     + relecture au retour sur l'onglet
+Validation        →  create_booking               refus si le créneau a été pris
+                                                  entre-temps  ← seul décisif
 ```
 
-### Dans le code
+Les deux premiers sont du confort d'affichage et peuvent être périmés de
+quelques secondes. Le contrôle qui fait foi est celui de `create_booking`, dans
+la même transaction que l'insertion : deux personnes qui valident le même
+créneau à la même seconde ne peuvent pas réussir toutes les deux.
 
-```typescript
-// Le composant time-selection s'abonne aux changements
-this.bookingService.subscribeToBookings(date, () => {
-  // Callback appelé automatiquement quand une réservation change
-  this.loadTimeSlots(); // Recharge les créneaux
-});
-```
+## 📦 Budgets de build
+
+`ng build` surveille deux seuils (angular.json) :
+
+- **bundle initial — alerte à 620 ko.** Le plancher est structurel : environ
+  200 ko pour `@supabase/supabase-js` et le reste pour Angular. Le seuil laisse
+  une marge d'une trentaine de ko, de quoi révéler un écran qui cesserait
+  d'être chargé à la demande.
+- **feuille de style de composant — alerte à 6 ko.** Les styles communs de
+  l'administration ne sont donc pas partagés par `@use` — Sass en recopierait
+  l'intégralité dans chaque écran. Ils sont posés une fois par
+  `admin-layout`, déclaré `ViewEncapsulation.None` et porté par `.admin-shell`.
 
 ## 🎨 Parcours utilisateur
 
@@ -140,7 +140,7 @@ this.bookingService.subscribeToBookings(date, () => {
 1. **Page d'accueil** → Présentation du salon
 2. **Sélection du service** → Choisir manucure, pédicure, coiffure, etc.
 3. **Sélection de la date** → 7 prochains jours disponibles
-4. **Sélection de l'horaire** → Créneaux disponibles (mise à jour en temps réel)
+4. **Sélection de l'horaire** → Créneaux encore libres
 5. **Formulaire client** → Nom, téléphone, email, option WhatsApp
 6. **Confirmation** → Récapitulatif complet de la réservation
 
@@ -150,8 +150,8 @@ Le système utilise plusieurs mécanismes :
 
 1. **Contrainte unique en base** : Impossible d'insérer 2 réservations au même créneau
 2. **Status 'pending'** : Verrouillage temporaire de 10 minutes
-3. **Temps réel** : Les créneaux se grisant immédiatement pour tous les utilisateurs
-4. **Cache intelligent** : Rafraîchissement automatique toutes les 30 secondes
+3. **Contrôle final dans `create_booking`** : refus si le créneau vient d'être pris
+4. **Cache de 30 s**, vidé au retour sur l'onglet
 
 ## 📊 Gestion des données
 
@@ -231,33 +231,36 @@ VALUES ('2024-02-01', '09:00', '18:00', 'Fermeture exceptionnelle');
 
 ### Modifier les couleurs du thème
 
-Éditez les variables CSS dans chaque composant :
+Les variables sont dans `src/styles.scss`, sous `:root` :
 
 ```css
---cream: #FFF8F0;
---sand: #E8DDD0;
---terracotta: #C89B7B;
---bronze: #967259;
---charcoal: #2A2A2A;
+--gold:      #F3B1F1;   /* rose accent : liens, boutons */
+--heading:   #69005A;   /* titres et liens */
+--bg:        #FFFFFF;
+--text:      #2A2A2A;
 ```
+
+## 🛡️ Espace d'administration
+
+Accessible aux comptes `role = 'admin'` (cf. `supabase-admin-role.sql`), sur
+`/admin` : réservations, statistiques comptables, prestations et catégories,
+promotions, horaires, indisponibilités, notifications.
+
+Le guide destiné à la gérante est dans [GUIDE-ADMIN.md](GUIDE-ADMIN.md).
+
+Le code de cet espace est chargé à la demande, derrière un `canMatch` : un
+visiteur qui n'est pas administrateur ne le télécharge jamais. Ce n'est
+toutefois qu'un confort d'affichage — la protection réelle des données tient
+aux policies RLS, qui s'appuient sur `public.is_admin()`.
 
 ## 📈 Prochaines étapes
 
-### Interface Admin (à développer)
-
-L'interface admin permettra à la gérante de :
-- Voir toutes les réservations (calendrier, liste)
-- Confirmer/annuler des réservations
-- Gérer les services et les prix
-- Bloquer des créneaux
-- Voir les statistiques
-- Gérer les horaires d'ouverture
-
 ### Notifications
 
-- **Email** : Via Supabase Edge Functions + service email (SendGrid, Resend)
-- **WhatsApp** : Via Twilio API ou Meta WhatsApp Business API
-- **SMS** : Via Twilio
+La file d'attente et les rappels existent (`supabase-notifications.sql`), en
+mode simulation : les messages sont enregistrés mais rien n'est envoyé. Poser
+les secrets `WHATSAPP_TOKEN` et `WHATSAPP_PHONE_ID` puis déployer la fonction
+`supabase/functions/send-notifications` suffit à les faire partir.
 
 ### Paiement en ligne
 
@@ -274,13 +277,13 @@ npm install @stripe/stripe-js
 
 ### Les créneaux ne se chargent pas
 
-→ Vérifiez que le SQL a bien été exécuté dans Supabase
+→ Vérifiez que toute la séquence de MIGRATIONS.md a bien été exécutée
 → Ouvrez la console du navigateur (F12) pour voir les erreurs
 
-### Le temps réel ne fonctionne pas
+### Un créneau déjà pris reste affiché
 
-→ Vérifiez que la réplication est activée dans Database > Replication
-→ Vérifiez la console pour les erreurs de WebSocket
+→ Normal quelques secondes : la liste est mise en cache 30 s et relue au retour
+   sur l'onglet. La validation, elle, refusera le créneau.
 
 ### Erreur CORS
 
@@ -299,4 +302,4 @@ Pour toute question :
 
 ---
 
-**Développé avec ❤️ en Angular 20 + Supabase**
+**Développé avec ❤️ en Angular 21 + Supabase**

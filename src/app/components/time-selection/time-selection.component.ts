@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { BookingService } from '../../services/booking.service';
 import { TimeSlot } from '../../models/booking.model';
+import { parseDateString } from '../../utils/date';
 
 @Component({
   selector: 'app-time-selection',
@@ -15,7 +16,6 @@ export class TimeSelectionComponent implements OnInit, OnDestroy {
   selectedTime: string | null = null;
   loading = true;
   error = '';
-  realtimeConnected = false;
   formattedDate = '';
 
   private selectedDate: string = '';
@@ -44,12 +44,29 @@ export class TimeSelectionComponent implements OnInit, OnDestroy {
     }
 
     this.loadTimeSlots();
-    this.setupRealtime();
+    document.addEventListener('visibilitychange', this.refreshOnReturn);
   }
 
   ngOnDestroy(): void {
-    this.bookingService.unsubscribeFromBookings();
+    document.removeEventListener('visibilitychange', this.refreshOnReturn);
   }
+
+  /**
+   * Recharge les créneaux au retour sur l'onglet.
+   *
+   * Il n'y a pas d'abonnement temps réel possible ici : la table `bookings`
+   * n'est plus lisible par un visiteur non connecté (cf. supabase-secure-bookings.sql),
+   * donc Postgres ne lui enverrait aucun changement. Ce rechargement à la
+   * reprise couvre le cas réel — l'onglet resté ouvert pendant qu'un créneau
+   * était pris ailleurs. Le contrôle décisif reste celui de `create_booking`.
+   *
+   * Champ fléché : la référence doit être stable pour pouvoir être retirée.
+   */
+  private refreshOnReturn = (): void => {
+    if (document.hidden) return;
+    this.bookingService.clearSlotsCache();
+    this.loadTimeSlots();
+  };
 
   async loadTimeSlots(): Promise<void> {
     this.loading = true;
@@ -69,20 +86,12 @@ export class TimeSelectionComponent implements OnInit, OnDestroy {
     }
   }
 
-  setupRealtime(): void {
-    this.bookingService.subscribeToBookings(this.selectedDate, () => {
-      this.loadTimeSlots();
-    });
-    this.realtimeConnected = true;
-    this.cdr.detectChanges();
-  }
-
   selectTime(time: string): void {
     this.selectedTime = time;
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseDateString(dateString);
     const dayNames   = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
                         'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];

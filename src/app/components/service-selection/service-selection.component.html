@@ -1,17 +1,32 @@
 <div class="container">
-  <div class="progress-bar">
-    <div class="progress-fill" [style.width]="'0%'"></div>
-  </div>
-  <div class="progress-label">Étape 1/4 - Choisir un service</div>
+
+  <header class="screen-head">
+    <button class="back-link" (click)="goBack()">
+      <app-icon name="arrow-left" [size]="14"></app-icon>
+      Sélectionner une catégorie
+    </button>
+
+    <h1 class="screen-title">
+      <app-icon name="grid" [size]="18"></app-icon>
+      Sélectionner un rendez-vous
+    </h1>
+  </header>
 
   <main class="main-content">
-    <h2 class="step-title">Que souhaitez-vous réserver ?</h2>
 
-    <div class="service-grid">
+    @if (category) {
+      <h2 class="category-name">{{ category.name }}</h2>
+    }
+
+    @if (error) {
+      <div class="error">{{ error }}</div>
+    }
+
+    <div class="services-card">
       @if (loading) {
         @for (item of skeletonItems; track item) {
-          <div class="skeleton-card">
-            <div class="skeleton-icon"></div>
+          <div class="service-row">
+            <div class="skeleton-image"></div>
             <div class="skeleton-info">
               <div class="skeleton-line skeleton-line-long"></div>
               <div class="skeleton-line skeleton-line-short"></div>
@@ -20,38 +35,44 @@
         }
       } @else {
         @for (service of services; track service.id) {
-          <div
-            class="service-card"
-            [class.selected]="selectedService?.id === service.id"
-            (click)="selectService(service)">
+          <article class="service-row">
             @if (getServiceImage(service); as image) {
               <img class="service-image" [src]="image" [alt]="service.name" loading="lazy">
             } @else {
               <div class="service-image service-image-empty" aria-hidden="true"></div>
             }
+
             <div class="service-info">
-              <div class="service-name">{{ service.name }}</div>
-              <div class="service-details">
-                {{ service.duration_minutes | duration }} · {{ service.price }} FCFA
-              </div>
+              <h3 class="service-name">{{ service.name }}</h3>
+              @if (pricing(service); as price) {
+                <p class="service-meta">
+                  {{ service.duration_minutes | duration }} à
+                  @if (price.discountPercent) {
+                    <span class="price-was">{{ priceLabel(price.basePrice) }}</span>
+                    <span class="price-now">{{ priceLabel(price.finalPrice) }}</span>
+                    <span class="price-tag">−{{ price.discountPercent }} %</span>
+                  } @else {
+                    {{ priceLabel(price.basePrice) }}
+                  }
+                </p>
+              }
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
             </div>
+
+            @if (!isAdmin) {
+              <button class="select-btn" (click)="selectService(service)">
+                Sélectionner
+              </button>
+            }
+          </article>
+        } @empty {
+          <div class="services-empty">
+            Aucune prestation disponible dans cette catégorie pour le moment.
           </div>
         }
       }
-    </div>
-
-    @if (error) {
-      <div class="error">{{ error }}</div>
-    }
-
-    <div class="btn-container">
-      <button class="btn btn-secondary" (click)="goBack()">Retour</button>
-      <button
-        class="btn btn-primary"
-        [disabled]="!selectedService || loading"
-        (click)="continue()">
-        Continuer
-      </button>
     </div>
   </main>
 </div>

@@ -43,31 +43,6 @@
   margin-bottom: 1.5rem;
 }
 
-.realtime-indicator {
-  background: #e8f5e9;
-  color: #2e7d32;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  background: #4caf50;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 .time-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

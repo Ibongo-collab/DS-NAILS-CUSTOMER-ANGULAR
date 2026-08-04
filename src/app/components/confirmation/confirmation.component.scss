@@ -88,6 +88,21 @@
   color: #2A2A2A;
 }
 
+/* Prix public, barré : la remise appliquée doit rester lisible. */
+.price-was {
+  text-decoration: line-through;
+  color: #8A6A85;
+  font-weight: 400;
+  margin-right: 0.4rem;
+}
+
+.price-note {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #A03030;
+}
+
 .notification-info {
   background: #e8f5e9;
   color: #2e7d32;

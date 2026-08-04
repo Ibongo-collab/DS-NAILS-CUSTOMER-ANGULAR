@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../admin.service';
 import { BlockedSlot } from '../../models/booking.model';
+import { parseDateString, todayString } from '../../utils/date';
 
 @Component({
   selector: 'app-admin-blocked-slots',
@@ -90,11 +91,11 @@ export class AdminBlockedSlotsComponent implements OnInit {
   }
 
   isPast(slot: BlockedSlot): boolean {
-    return slot.date < new Date().toISOString().split('T')[0];
+    return slot.date < todayString();
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString + 'T00:00:00');
+    const date = parseDateString(dateString);
     const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
     const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
     return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;

@@ -77,38 +77,34 @@
   <!-- Liste des prestations -->
   <section class="services-section" id="services">
     <div class="services-head">
-      <h2>Nos prestations</h2>
+      <h2>
+        <app-icon name="grid" [size]="18"></app-icon>
+        Sélectionner une catégorie
+      </h2>
     </div>
 
     <div class="services-card">
       @if (loadingServices) {
         @for (row of skeletonRows; track row) {
           <div class="service-row">
-            <span class="skeleton-thumb"></span>
             <span class="skeleton-line"></span>
-            @if (!isAdmin) {
-              <span class="skeleton-btn"></span>
-            }
+            <span class="skeleton-btn"></span>
           </div>
         }
       } @else {
-        @for (service of services; track service.id) {
+        @for (category of categories; track category.id) {
           <div class="service-row">
-            @if (getServiceImage(service); as image) {
-              <img class="service-thumb" [src]="image" [alt]="service.name" loading="lazy">
-            }
             <div class="service-info">
-              <span class="service-title">{{ service.name }}</span>
-              <span class="service-meta">{{ serviceMeta(service) }}</span>
+              <span class="service-title">{{ category.name }}</span>
             </div>
-            @if (!isAdmin) {
-              <button class="select-btn" (click)="selectService(service)">
-                Sélectionner
-              </button>
-            }
+            <!-- Ouvert aussi à l'administration : voir les prestations d'une
+                 catégorie relève de la consultation, pas de la réservation -->
+            <button class="select-btn" (click)="selectCategory(category)">
+              Sélectionner
+            </button>
           </div>
         } @empty {
-          <div class="services-empty">Aucune prestation disponible pour le moment.</div>
+          <div class="services-empty">Aucune catégorie disponible pour le moment.</div>
         }
       }
     </div>

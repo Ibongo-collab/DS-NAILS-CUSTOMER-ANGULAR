@@ -16,7 +16,10 @@
       "Bash(ls src/app/assets/img)",
       "Bash(node -e \"const a=require\\('./angular.json'\\);const p=a.projects;const name=Object.keys\\(p\\)[0];const b=p[name].architect.build;console.log\\('project:',name\\);console.log\\('builder:',b.builder\\);console.log\\('outputPath:',JSON.stringify\\(b.options.outputPath\\)\\)\")",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
-      "Bash(node -e \"const a=require\\('./angular.json'\\);const b=a.projects['salon-booking'].architect.build.configurations.production.budgets;console.log\\(JSON.stringify\\(b,null,2\\)\\)\")"
+      "Bash(node -e \"const a=require\\('./angular.json'\\);const b=a.projects['salon-booking'].architect.build.configurations.production.budgets;console.log\\(JSON.stringify\\(b,null,2\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const h=fs.readFileSync\\('dist/salon-booking/browser/index.html','utf8'\\);console.log\\([...h.matchAll\\(/src=\\\\\"\\([^\\\\\"]+\\\\.js\\)\\\\\"/g\\)].map\\(m=>m[1]\\).join\\(' '\\)\\)\")",
+      "Bash(node -e ' *)"
     ]
   }
 }

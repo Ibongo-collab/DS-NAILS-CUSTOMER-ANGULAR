@@ -1,4 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, DestroyRef, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { BookingService } from '../../services/booking.service';
@@ -6,6 +7,7 @@ import { Booking } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { TimePipe } from '../../pipes/time.pipe';
+import { parseDateString, todayString } from '../../utils/date';
 
 @Component({
   selector: 'app-client-space',
@@ -41,6 +43,8 @@ export class ClientSpaceComponent implements OnInit {
     this.historyVisibleCount += this.PAGE_SIZE;
   }
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private authService: AuthService,
     private bookingService: BookingService,
@@ -56,20 +60,22 @@ export class ClientSpaceComponent implements OnInit {
 
     this.userName = this.authService.getUserName();
 
-    this.authService.isAdmin$.subscribe(isAdmin => {
-      if (isAdmin === undefined) return; // rôle pas encore résolu
+    this.authService.isAdmin$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isAdmin => {
+        if (isAdmin === undefined) return; // rôle pas encore résolu
 
-      this.isAdmin = isAdmin;
+        this.isAdmin = isAdmin;
 
-      // Inutile d'interroger la base pour des réservations qui ne seront pas affichées
-      if (isAdmin) {
-        this.loading = false;
-        this.cdr.detectChanges();
-        return;
-      }
+        // Inutile d'interroger la base pour des réservations qui ne seront pas affichées
+        if (isAdmin) {
+          this.loading = false;
+          this.cdr.detectChanges();
+          return;
+        }
 
-      this.loadBookings();
-    });
+        this.loadBookings();
+      });
   }
 
   async loadBookings(showSpinner = true): Promise<void> {
@@ -99,8 +105,8 @@ export class ClientSpaceComponent implements OnInit {
   }
 
   canCancel(booking: Booking): boolean {
-    const today = new Date().toISOString().split('T')[0];
-    return ['pending', 'confirmed'].includes(booking.status) && booking.booking_date >= today;
+    return ['pending', 'confirmed'].includes(booking.status) &&
+      booking.booking_date >= todayString();
   }
 
   confirmCancel(booking: Booking): void {
@@ -147,7 +153,7 @@ export class ClientSpaceComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString + 'T00:00:00');
+    const date = parseDateString(dateString);
     const days   = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
     const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
     return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
@@ -163,7 +169,8 @@ export class ClientSpaceComponent implements OnInit {
   }
 
   newBooking(): void {
-    this.router.navigate(['/service']);
+    // L'accueil est le point d'entrée du parcours : choix de la catégorie
+    this.router.navigate(['/']);
   }
 
   goToSettings(): void {

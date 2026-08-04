@@ -1,0 +1,45 @@
+/* Le champ Remise n'accueille que deux ou trois caractères : la grille lui
+   laisse sinon la même largeur qu'au nom de la promotion. */
+.promo-form .field-narrow {
+  max-width: 130px;
+}
+
+.promo-form > .btn-sm {
+  height: var(--control-height);
+  margin-left: 0;
+}
+
+.promo-hint {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #8A6A85;
+}
+
+.head-note {
+  margin-left: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #8A6A85;
+}
+
+/* Une promotion qui ne s'applique pas aujourd'hui reste consultable, mais ne
+   doit pas attirer l'œil autant que celles en cours. */
+tr.inactive td {
+  opacity: 0.6;
+}
+
+tr.editing td {
+  background: #FDF6FC;
+}
+
+.cell-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.promo-running   { background: #E1F5E7; color: #1F6B3A; }
+.promo-scheduled { background: #FFF3D6; color: #8A6100; }
+.promo-ended     { background: #EFE7EE; color: #7A3A70; }
+.promo-disabled  { background: #FBE3E3; color: #A03030; }

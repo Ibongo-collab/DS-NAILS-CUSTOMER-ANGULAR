@@ -1,8 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, DestroyRef, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { BookingService } from '../../services/booking.service';
-import { OpeningHours, Service } from '../../models/booking.model';
+import { OpeningHours, ServiceCategory } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
 
 // 1 = Lundi … 7 = Dimanche (cf. colonne day_of_week)
@@ -22,14 +23,17 @@ export interface OpeningHoursGroup {
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
-  isAuthenticated = false;
   /** Un administrateur gère le salon, il ne prend pas de rendez-vous */
   isAdmin = false;
-  services: Service[] = [];
+  categories: ServiceCategory[] = [];
   loadingServices = true;
   readonly skeletonRows = [1, 2, 3, 4, 5];
   openingHours: OpeningHoursGroup[] = [];
   loadingHours = true;
+
+  // `isAdmin$` ne se termine jamais : sans cette référence, chaque passage sur
+  // l'accueil laisserait un abonné de plus derrière lui.
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private router: Router,
@@ -39,31 +43,31 @@ export class HomeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
-      this.isAuthenticated = !!user;
-      this.cdr.detectChanges();
-    });
+    this.authService.isAdmin$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isAdmin => {
+        this.isAdmin = isAdmin === true;
+        this.cdr.detectChanges();
+      });
 
-    this.authService.isAdmin$.subscribe(isAdmin => {
-      this.isAdmin = isAdmin === true;
-      this.cdr.detectChanges();
-    });
     this.loadServices();
     this.loadOpeningHours();
   }
 
   loadOpeningHours(): void {
-    this.bookingService.getAllOpeningHours().subscribe({
-      next: (hours) => {
-        this.openingHours = this.groupOpeningHours(hours);
-        this.loadingHours = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.loadingHours = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.bookingService.getAllOpeningHours()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (hours) => {
+          this.openingHours = this.groupOpeningHours(hours);
+          this.loadingHours = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.loadingHours = false;
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   /** Regroupe les jours consécutifs partageant les mêmes horaires (ou fermés). */
@@ -119,65 +123,27 @@ export class HomeComponent implements OnInit {
   }
 
   loadServices(): void {
-    this.bookingService.getServices().subscribe({
-      next: (services) => {
-        this.services = services.sort((a, b) =>
-          a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })
-        );
-        this.loadingServices = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.loadingServices = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.bookingService.getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (categories) => {
+          this.categories = categories;
+          this.loadingServices = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.loadingServices = false;
+          this.cdr.detectChanges();
+        }
+      });
   }
 
-  /** Photo téléversée depuis l'administration ; absente tant qu'aucune n'est posée. */
-  getServiceImage(service: Service): string | null {
-    return service.image_url || null;
-  }
-
-  serviceMeta(service: Service): string {
-    const duration = this.formatDuration(service.duration_minutes);
-    const price = this.formatPrice(service.price);
-    return duration ? `${duration} - ${price} FCFA` : `${price} FCFA`;
-  }
-
-  private formatDuration(minutes: number): string {
-    if (!minutes || minutes <= 0) return '';
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    if (h === 0) return `${m} minutes`;
-    const hLabel = `${h} heure${h > 1 ? 's' : ''}`;
-    return m === 0 ? hLabel : `${hLabel} ${m}`;
-  }
-
-  private formatPrice(price: number): string {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(price || 0);
+  /** Ouvre la liste des prestations de la catégorie choisie. */
+  selectCategory(category: ServiceCategory): void {
+    this.router.navigate(['/prestations', category.id]);
   }
 
   startBooking(): void {
     document.getElementById('services')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  selectService(service: Service): void {
-    this.bookingService.updateBookingState({
-      selectedService: service,
-      currentStep: 1
-    });
-    this.router.navigate(['/date']);
-  }
-
-  goToAuth(): void {
-    this.router.navigate(['/auth']);
-  }
-
-  goToSpace(): void {
-    this.router.navigate(['/mon-espace']);
   }
 }

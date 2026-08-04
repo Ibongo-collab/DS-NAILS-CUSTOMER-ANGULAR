@@ -10,7 +10,37 @@ export interface Service {
   icon: string | null;
   /** URL publique de la photo (bucket service-images) */
   image_url: string | null;
+  /** Catégorie de rattachement. NULL = non classée. */
+  category_id: string | null;
   active: boolean;
+  created_at: string;
+}
+
+export interface Promotion {
+  id: string;
+  name: string;
+  discount_percent: number;
+  /** null = s'applique à toutes les prestations */
+  service_id: string | null;
+  starts_on: string;
+  ends_on: string;
+  active: boolean;
+  created_at: string;
+}
+
+/** Prix d'une prestation, remise éventuelle appliquée. */
+export interface PricedService {
+  /** Prix public, avant remise */
+  basePrice: number;
+  /** Montant réellement dû */
+  finalPrice: number;
+  discountPercent: number;
+  promotionName: string | null;
+}
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
   created_at: string;
 }
 

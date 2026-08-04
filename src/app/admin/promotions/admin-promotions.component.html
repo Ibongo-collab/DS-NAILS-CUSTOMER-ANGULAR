@@ -1,0 +1,168 @@
+@if (error) {
+  <div class="alert alert-error">{{ error }}</div>
+}
+@if (notice) {
+  <div class="alert alert-success">{{ notice }}</div>
+}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Créer une promotion</h2>
+  </div>
+  <div class="panel-body">
+    <div class="field-grid promo-form">
+      <div class="field">
+        <label for="promo-name">Nom</label>
+        <input
+          id="promo-name"
+          type="text"
+          [(ngModel)]="draft.name"
+          placeholder="Offre de rentrée">
+      </div>
+
+      <div class="field field-narrow">
+        <label for="promo-percent">Remise (%)</label>
+        <input
+          id="promo-percent"
+          type="number"
+          min="1"
+          max="100"
+          step="1"
+          [(ngModel)]="draft.discount_percent"
+          placeholder="20">
+      </div>
+
+      <div class="field">
+        <label for="promo-scope">S'applique à</label>
+        <select id="promo-scope" [(ngModel)]="draft.service_id">
+          <option value="">Toutes les prestations</option>
+          @for (service of services; track service.id) {
+            <option [value]="service.id">{{ service.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="promo-start">Début</label>
+        <input id="promo-start" type="date" [(ngModel)]="draft.starts_on">
+      </div>
+
+      <div class="field">
+        <label for="promo-end">Fin</label>
+        <input id="promo-end" type="date" [(ngModel)]="draft.ends_on">
+      </div>
+
+      <button class="btn-sm btn-primary-sm" [disabled]="!canCreate || creating" (click)="create()">
+        {{ creating ? 'Ajout…' : 'Créer' }}
+      </button>
+    </div>
+
+    <p class="promo-hint">
+      Les deux dates sont <strong>incluses</strong>. La remise s'applique aux
+      réservations dont le <strong>rendez-vous</strong> tombe dans cette période.
+      Si plusieurs promotions se chevauchent, c'est la <strong>plus avantageuse</strong>
+      qui est retenue — elles ne s'additionnent pas.
+    </p>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>
+      Promotions
+      @if (runningCount) {
+        <span class="head-note">{{ runningCount }} en cours</span>
+      }
+    </h2>
+    <button class="btn-sm" (click)="load()" [disabled]="loading">Actualiser</button>
+  </div>
+
+  @if (loading) {
+    <div class="state">Chargement des promotions…</div>
+  } @else {
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Remise</th>
+            <th>S'applique à</th>
+            <th>Période</th>
+            <th>État</th>
+            <th class="cell-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (promotion of promotions; track promotion.id) {
+            @if (editingId === promotion.id) {
+              <tr class="editing">
+                <td><input type="text" [(ngModel)]="edit.name"></td>
+                <td>
+                  <input type="number" min="1" max="100" step="1" [(ngModel)]="edit.discount_percent">
+                </td>
+                <td>
+                  <select [(ngModel)]="edit.service_id">
+                    <option value="">Toutes les prestations</option>
+                    @for (service of services; track service.id) {
+                      <option [value]="service.id">{{ service.name }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="cell-dates">
+                  <input type="date" [(ngModel)]="edit.starts_on">
+                  <input type="date" [(ngModel)]="edit.ends_on">
+                </td>
+                <td>—</td>
+                <td class="cell-actions">
+                  <button
+                    class="btn-sm btn-primary-sm"
+                    [disabled]="!canSaveEdit || busyId === promotion.id"
+                    (click)="saveEdit(promotion)">
+                    Enregistrer
+                  </button>
+                  <button class="btn-sm" (click)="cancelEdit()">Annuler</button>
+                </td>
+              </tr>
+            } @else {
+              <tr [class.inactive]="state(promotion) !== 'running'">
+                <td class="cell-strong">{{ promotion.name }}</td>
+                <td class="cell-strong">−{{ formatPercent(promotion.discount_percent) }}</td>
+                <td>{{ scopeLabel(promotion) }}</td>
+                <td>{{ formatDate(promotion.starts_on) }} → {{ formatDate(promotion.ends_on) }}</td>
+                <td>
+                  <span class="badge" [class]="'badge promo-' + state(promotion)">
+                    {{ stateLabel(promotion) }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  <button
+                    class="btn-sm"
+                    [disabled]="busyId === promotion.id"
+                    (click)="startEdit(promotion)">
+                    Modifier
+                  </button>
+                  <button
+                    class="btn-sm"
+                    [disabled]="busyId === promotion.id"
+                    (click)="toggleActive(promotion)">
+                    {{ promotion.active ? 'Désactiver' : 'Activer' }}
+                  </button>
+                  <button
+                    class="btn-sm btn-danger"
+                    [disabled]="busyId === promotion.id"
+                    (click)="remove(promotion)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="6" class="state">Aucune promotion enregistrée.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

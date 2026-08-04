@@ -62,7 +62,19 @@
           <div class="detail-icon"><app-icon name="wallet" [size]="22"></app-icon></div>
           <div class="detail-info">
             <div class="detail-label">Prix</div>
-            <div class="detail-value">{{ bookingState.selectedService?.price }} FCFA</div>
+            @if (pricing && pricing.discountPercent) {
+              <div class="detail-value">
+                <span class="price-was">{{ priceLabel(pricing.basePrice) }}</span>
+                {{ priceLabel(pricing.finalPrice) }}
+              </div>
+              <div class="price-note">
+                {{ pricing.promotionName }} : −{{ pricing.discountPercent }} %
+              </div>
+            } @else {
+              <div class="detail-value">
+                {{ priceLabel(pricing?.basePrice ?? bookingState.selectedService?.price ?? 0) }}
+              </div>
+            }
           </div>
         </div>
       </div>

@@ -1,4 +1,13 @@
-@use '../admin-ui' as *;
+/* Prend la place du bouton « Terminer » tant que l'heure n'est pas venue :
+   sans repère, son absence passerait pour une anomalie. */
+.action-note {
+  display: inline-block;
+  padding: 0.42rem 0.6rem;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: #8A6A85;
+  white-space: nowrap;
+}
 
 /* Bouton d'effacement de la date.
    Placé à côté du champ et non par-dessus : les navigateurs y logent déjà
@@ -36,48 +45,116 @@
   }
 }
 
-// --- Confirmation de clôture ---
+// --- Saisie manuelle ---
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
+.manual-intro {
+  margin: 0 0 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #8A6A85;
+}
+
+.optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+
+/* Le calcul du montant est séparé de l'identité du client : c'est le seul
+   endroit du formulaire où une erreur fausse la comptabilité. */
+.manual-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.1rem;
+  margin-top: 1.2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(105, 0, 90, 0.1);
+}
+
+.check-line {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.45);
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.modal {
-  width: 100%;
-  max-width: 440px;
-  padding: 1.75rem 1.5rem 1.5rem;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.2s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(16px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-
-.modal-title {
-  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 1.25rem;
+  gap: 0.45rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  line-height: 1.35;
-  color: #69005A;
-  margin-bottom: 1.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #4A2344;
+  cursor: pointer;
+  padding-bottom: 0.55rem;
 }
+
+.manual-price .field-narrow {
+  max-width: 110px;
+}
+
+.amount-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-left: auto;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  background: #FCF4FB;
+  text-align: right;
+}
+
+.amount-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #7A3A70;
+}
+
+.amount-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #69005A;
+}
+
+.amount-base {
+  font-size: 0.75rem;
+  color: #8A6A85;
+  text-decoration: line-through;
+}
+
+.manual-suggestion {
+  margin: 0.9rem 0 0;
+  font-size: 0.83rem;
+  color: #8A6100;
+  background: #FFF3D6;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #69005A;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+}
+
+.manual-hint {
+  font-size: 0.8rem;
+  color: #8A6A85;
+}
+
+// --- Confirmation de clôture ---
 
 .modal-recap {
   padding: 0.9rem 1rem;
@@ -111,29 +188,4 @@
 }
 
 /* Ambre : une conséquence à peser, pas une erreur */
-.modal-warning {
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  background: #FFF3D6;
-  color: #8A6100;
-  font-size: 0.85rem;
-  line-height: 1.55;
-  margin-bottom: 0.85rem;
 
-  strong { font-weight: 700; }
-}
-
-.modal-hint {
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: #8A6A85;
-  margin-bottom: 1.5rem;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-
-  .btn-sm { margin-left: 0; }
-}

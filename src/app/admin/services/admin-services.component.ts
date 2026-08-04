@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../admin.service';
-import { Service } from '../../models/booking.model';
+import { Service, ServiceCategory } from '../../models/booking.model';
 import { IconComponent } from '../../components/shared/icon/icon.component';
 
 interface ServiceDraft {
@@ -11,6 +11,7 @@ interface ServiceDraft {
   minutes: number | null;
   price: number | null;
   description: string;
+  categoryId: string | null;
 }
 
 /** Photo en cours de sélection, avec son aperçu local. */
@@ -50,6 +51,26 @@ export class AdminServicesComponent implements OnInit {
   draggingNew = false;
   draggingEdit = false;
 
+  // --- Catégories ---
+  categories: ServiceCategory[] = [];
+  newCategoryName = '';
+  creatingCategory = false;
+  editingCategoryId: string | null = null;
+  categoryDraftName = '';
+  busyCategoryId: string | null = null;
+
+  /** Catégorie survolée pendant un glisser-déposer de prestation */
+  dropTargetId: string | null | undefined = undefined;
+  /** Prestation en cours de déplacement */
+  draggedServiceId: string | null = null;
+
+  // --- Sélecteur multiple ---
+  /** Catégorie dont on gère le contenu ; null = sélecteur fermé */
+  pickerCategory: ServiceCategory | null = null;
+  pickerSelection = new Set<string>();
+  pickerSearch = '';
+  savingPicker = false;
+
   constructor(
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
@@ -61,7 +82,7 @@ export class AdminServicesComponent implements OnInit {
   }
 
   private emptyDraft(): ServiceDraft {
-    return { name: '', hours: null, minutes: null, price: null, description: '' };
+    return { name: '', hours: null, minutes: null, price: null, description: '', categoryId: null };
   }
 
   /** Combine les deux champs en un total de minutes, seul format stocké. */
@@ -193,11 +214,281 @@ export class AdminServicesComponent implements OnInit {
 
   async load(showSpinner = true): Promise<void> {
     if (showSpinner) this.applyState(() => { this.loading = true; });
-    const services = await this.adminService.getServices();
+
+    const [services, categories] = await Promise.all([
+      this.adminService.getServices(),
+      this.adminService.getCategories()
+    ]);
+
     this.applyState(() => {
       this.services = services;
+      this.categories = categories;
       this.loading = false;
     });
+  }
+
+  // ==================== CATÉGORIES ====================
+
+  categoryName(id: string | null | undefined): string {
+    if (!id) return 'Non classée';
+    return this.categories.find(c => c.id === id)?.name ?? 'Non classée';
+  }
+
+  servicesInCategory(id: string | null): Service[] {
+    return this.services.filter(s => (s.category_id ?? null) === id);
+  }
+
+  get uncategorizedCount(): number {
+    return this.servicesInCategory(null).length;
+  }
+
+  async createCategory(): Promise<void> {
+    const name = this.newCategoryName.trim();
+    if (!name || this.creatingCategory) return;
+
+    this.applyState(() => {
+      this.creatingCategory = true;
+      this.error = '';
+    });
+
+    const result = await this.adminService.createCategory(name);
+
+    if (!result.success) {
+      this.applyState(() => {
+        this.creatingCategory = false;
+        this.error = result.error || 'La création a échoué.';
+      });
+      return;
+    }
+
+    this.applyState(() => {
+      this.creatingCategory = false;
+      this.newCategoryName = '';
+    });
+    await this.load(false);
+  }
+
+  startCategoryEdit(category: ServiceCategory): void {
+    this.editingCategoryId = category.id;
+    this.categoryDraftName = category.name;
+    this.error = '';
+  }
+
+  cancelCategoryEdit(): void {
+    this.editingCategoryId = null;
+    this.categoryDraftName = '';
+  }
+
+  async saveCategory(category: ServiceCategory): Promise<void> {
+    const name = this.categoryDraftName.trim();
+    if (!name || name === category.name) {
+      this.cancelCategoryEdit();
+      return;
+    }
+
+    this.applyState(() => {
+      this.busyCategoryId = category.id;
+      this.error = '';
+    });
+
+    const result = await this.adminService.renameCategory(category.id, name);
+
+    if (!result.success) {
+      this.applyState(() => {
+        this.busyCategoryId = null;
+        this.error = result.error || 'Le renommage a échoué.';
+      });
+      return;
+    }
+
+    this.applyState(() => {
+      this.busyCategoryId = null;
+      this.editingCategoryId = null;
+    });
+    await this.load(false);
+  }
+
+  async removeCategory(category: ServiceCategory): Promise<void> {
+    const attached = this.servicesInCategory(category.id).length;
+    const warning = attached
+      ? `\n\n${attached} prestation(s) y sont rattachées : elles ne seront pas supprimées, `
+        + 'mais deviendront « Non classée ».'
+      : '';
+
+    if (!confirm(`Supprimer la catégorie « ${category.name} » ?${warning}`)) return;
+
+    this.applyState(() => {
+      this.busyCategoryId = category.id;
+      this.error = '';
+    });
+
+    const result = await this.adminService.deleteCategory(category.id);
+
+    if (!result.success) {
+      this.applyState(() => {
+        this.busyCategoryId = null;
+        this.error = result.error || 'La suppression a échoué.';
+      });
+      return;
+    }
+
+    this.applyState(() => { this.busyCategoryId = null; });
+    await this.load(false);
+  }
+
+  // ==================== AFFECTATION ====================
+
+  /** Rattache une prestation à une catégorie, ou l'en détache si `categoryId` est null. */
+  async assignCategory(service: Service, categoryId: string | null): Promise<void> {
+    if ((service.category_id ?? null) === categoryId) return;
+
+    this.applyState(() => {
+      this.busyId = service.id;
+      this.error = '';
+    });
+
+    const result = await this.adminService.updateService(service.id, { category_id: categoryId });
+
+    if (!result.success) {
+      this.applyState(() => {
+        this.busyId = null;
+        this.error = result.error || 'L\'affectation a échoué.';
+      });
+      return;
+    }
+
+    this.applyState(() => { this.busyId = null; });
+    await this.load(false);
+  }
+
+  // ==================== SÉLECTEUR MULTIPLE ====================
+
+  openPicker(category: ServiceCategory): void {
+    this.pickerCategory = category;
+    this.pickerSearch = '';
+    // Pré-cochées : les prestations déjà dans la catégorie. Décocher l'une
+    // d'elles l'en retire — le sélecteur gère le contenu, pas seulement l'ajout.
+    this.pickerSelection = new Set(
+      this.servicesInCategory(category.id).map(s => s.id)
+    );
+    this.error = '';
+  }
+
+  closePicker(): void {
+    this.pickerCategory = null;
+    this.pickerSelection.clear();
+    this.pickerSearch = '';
+  }
+
+  get pickerServices(): Service[] {
+    const term = this.pickerSearch.trim().toLowerCase();
+    return this.services.filter(s => !term || s.name.toLowerCase().includes(term));
+  }
+
+  isPicked(serviceId: string): boolean {
+    return this.pickerSelection.has(serviceId);
+  }
+
+  togglePick(serviceId: string): void {
+    if (this.pickerSelection.has(serviceId)) this.pickerSelection.delete(serviceId);
+    else this.pickerSelection.add(serviceId);
+  }
+
+  /** Catégorie actuelle d'une prestation, pour signaler un déplacement. */
+  currentCategoryOf(service: Service): ServiceCategory | null {
+    if (!service.category_id) return null;
+    return this.categories.find(c => c.id === service.category_id) ?? null;
+  }
+
+  /** Vrai si cocher cette prestation la retirera d'une autre catégorie. */
+  movesFromOther(service: Service): boolean {
+    if (!this.pickerCategory) return false;
+    return !!service.category_id && service.category_id !== this.pickerCategory.id;
+  }
+
+  /** Nombre de prestations qui changeront de catégorie si l'on valide. */
+  get pickerMoveCount(): number {
+    if (!this.pickerCategory) return 0;
+    return this.services.filter(
+      s => this.pickerSelection.has(s.id) && this.movesFromOther(s)
+    ).length;
+  }
+
+  async savePicker(): Promise<void> {
+    const category = this.pickerCategory;
+    if (!category || this.savingPicker) return;
+
+    // Deux mouvements : ce qui entre dans la catégorie, ce qui en sort
+    const toAttach = this.services.filter(
+      s => this.pickerSelection.has(s.id) && s.category_id !== category.id
+    );
+    const toDetach = this.services.filter(
+      s => !this.pickerSelection.has(s.id) && s.category_id === category.id
+    );
+
+    if (!toAttach.length && !toDetach.length) {
+      this.closePicker();
+      return;
+    }
+
+    this.applyState(() => {
+      this.savingPicker = true;
+      this.error = '';
+    });
+
+    const results = await Promise.all([
+      ...toAttach.map(s => this.adminService.updateService(s.id, { category_id: category.id })),
+      ...toDetach.map(s => this.adminService.updateService(s.id, { category_id: null }))
+    ]);
+
+    const failed = results.find(r => !r.success);
+
+    this.applyState(() => {
+      this.savingPicker = false;
+      if (failed) this.error = failed.error || 'Certaines affectations ont échoué.';
+      else this.closePicker();
+    });
+
+    await this.load(false);
+  }
+
+  // --- Glisser-déposer d'une prestation vers une catégorie ---
+
+  onServiceDragStart(event: DragEvent, service: Service): void {
+    this.draggedServiceId = service.id;
+    event.dataTransfer?.setData('text/plain', service.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  onServiceDragEnd(): void {
+    this.applyState(() => {
+      this.draggedServiceId = null;
+      this.dropTargetId = undefined;
+    });
+  }
+
+  onCategoryDragOver(event: DragEvent, categoryId: string | null): void {
+    // Sans preventDefault, le navigateur refuse le dépôt
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dropTargetId = categoryId;
+  }
+
+  onCategoryDragLeave(categoryId: string | null): void {
+    if (this.dropTargetId === categoryId) this.dropTargetId = undefined;
+  }
+
+  async onCategoryDrop(event: DragEvent, categoryId: string | null): Promise<void> {
+    event.preventDefault();
+
+    const serviceId = event.dataTransfer?.getData('text/plain') || this.draggedServiceId;
+    this.applyState(() => {
+      this.dropTargetId = undefined;
+      this.draggedServiceId = null;
+    });
+
+    const service = this.services.find(s => s.id === serviceId);
+    if (service) await this.assignCategory(service, categoryId);
   }
 
   // --- Création ---
@@ -205,6 +496,7 @@ export class AdminServicesComponent implements OnInit {
   get canCreate(): boolean {
     return (
       this.newDraft.name.trim().length > 0 &&
+      !!this.newDraft.categoryId &&
       this.isDurationValid(this.newDraft) &&
       this.newDraft.price !== null &&
       this.newDraft.price >= 0
@@ -237,6 +529,7 @@ export class AdminServicesComponent implements OnInit {
       duration_minutes: this.totalMinutes(this.newDraft),
       price: Number(this.newDraft.price),
       description: this.newDraft.description.trim() || null,
+      category_id: this.newDraft.categoryId,
       image_url: imageUrl,
       active: true
     });
@@ -269,7 +562,8 @@ export class AdminServicesComponent implements OnInit {
       hours: Math.floor(service.duration_minutes / 60) || null,
       minutes: service.duration_minutes % 60 || null,
       price: service.price,
-      description: service.description || ''
+      description: service.description || '',
+      categoryId: service.category_id ?? null
     };
     this.editCurrentImageUrl = service.image_url ?? null;
     this.clearEditImage();
@@ -320,6 +614,7 @@ export class AdminServicesComponent implements OnInit {
       duration_minutes: this.totalMinutes(this.editDraft),
       price: Number(this.editDraft.price),
       description: this.editDraft.description.trim() || null,
+      category_id: this.editDraft.categoryId,
       image_url: imageUrl
     });
 

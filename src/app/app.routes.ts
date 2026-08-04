@@ -11,6 +11,14 @@ export const routes: Routes = [
       import('./components/home/home.component').then(m => m.HomeComponent)
   },
   {
+    // Prestations d'une catégorie, seconde étape du choix côté client
+    path: 'prestations/:categoryId',
+    loadComponent: () =>
+      import('./components/service-selection/service-selection.component').then(
+        m => m.ServiceSelectionComponent
+      )
+  },
+  {
     path: 'date',
     loadComponent: () =>
       import('./components/date-selection/date-selection.component').then(

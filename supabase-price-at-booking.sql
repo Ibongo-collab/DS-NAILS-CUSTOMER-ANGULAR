@@ -19,6 +19,27 @@
 -- Il est conservé pour mémoire de la migration d'origine.
 
 -- ============================================
+-- 0. GARDE-FOU
+-- ============================================
+-- Un avertissement en commentaire se lit après coup. Celui-ci interrompt le
+-- script avant qu'il n'écrase quoi que ce soit : si la colonne `user_id`
+-- existe, c'est que des migrations plus récentes sont passées, et rejouer ce
+-- fichier ferait régresser `create_booking`.
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'bookings'
+          AND column_name = 'user_id'
+    ) THEN
+        RAISE EXCEPTION
+            'Fichier obsolète : la base est déjà à jour. Rejouer ce script rétablirait une version de create_booking sans user_id ni remise. Voir MIGRATIONS.md.';
+    END IF;
+END $$;
+
+-- ============================================
 -- 1. COLONNE
 -- ============================================
 

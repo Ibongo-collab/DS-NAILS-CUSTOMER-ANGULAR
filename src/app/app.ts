@@ -216,9 +216,4 @@ export class App implements OnInit {
       this.cdr.detectChanges();
     });
   }
-
-  async logout(): Promise<void> {
-    await this.authService.signOut();
-    this.router.navigate(['/']);
-  }
 }

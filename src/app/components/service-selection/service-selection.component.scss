@@ -1,219 +1,246 @@
 .container {
-  max-width: 600px;
+  max-width: 1000px;
   margin: 0 auto;
-  min-height: 100vh;
-  background: var(--card);
+  padding: 0 1.5rem 3rem;
 }
 
-.progress-bar {
-  height: 3px;
-  background: #EBD7E9;
+// --- En-tête ---
+
+.screen-head {
   position: relative;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #F3B1F1, #F8CFF6);
-  transition: width 0.5s ease;
-}
-
-.progress-label {
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.9rem;
-  color: #69005A;
-  font-weight: 500;
-  background: #FCF4FB;
-}
-
-.main-content {
-  padding: 2rem 1.5rem;
-}
-
-.step-title {
-  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 1.8rem;
-  color: #69005A;
-  margin-bottom: 1.5rem;
-  font-weight: 400;
-}
-
-.service-grid {
-  display: grid;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-// --- Cartes réelles ---
-
-.service-card {
-  background: #FCF4FB;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  padding: 1.25rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
-
-  &:hover {
-    border-color: #69005A;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  &.selected {
-    background: linear-gradient(135deg, #F8CFF6 0%, #F3B1F1 100%);
-    color: #69005A;
-    border-color: #69005A;
-
-    .service-details {
-      opacity: 0.95;
-    }
-  }
+  padding: 1.75rem 0 1.5rem;
+  flex-wrap: wrap;
 }
 
-/* Réserve la place de la vignette pour qu'une carte sans photo
-   ne décale pas les autres */
-.service-image-empty {
-  background: #EBD7E9;
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #7A3A70;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover { color: #69005A; }
+}
+
+.screen-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: #69005A;
+}
+
+/* Le titre reste optiquement centré, le retour ancré à gauche */
+@media (min-width: 760px) {
+  .screen-head { justify-content: flex-start; }
+  .back-link { position: absolute; left: 0; }
+  .screen-title { margin: 0 auto; }
+}
+
+.category-name {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #69005A;
+  margin-bottom: 1rem;
+}
+
+// --- Liste des prestations ---
+
+.services-card {
+  background: #fff;
+  border: 1px solid var(--border-soft, rgba(105, 0, 90, 0.1));
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.service-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(105, 0, 90, 0.08);
+  transition: background 0.2s ease;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: rgba(243, 177, 241, 0.05); }
 }
 
 .service-image {
-  width: 64px;
-  height: 64px;
+  width: 150px;
+  height: 170px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   object-fit: cover;
+  background: #FCF4FB;
+}
+
+.service-image-empty {
   background: #EBD7E9;
 }
 
 .service-info {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .service-name {
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 1.05rem;
   font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
+  color: #69005A;
 }
 
-.service-details {
-  font-size: 0.85rem;
-  opacity: 0.8;
+.service-meta {
+  font-size: 0.9rem;
+  color: #7A3A70;
 }
 
-// --- Skeleton ---
-
-@keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+/* Prix public, conservé barré : la remise ne se lit que par rapport à lui. */
+.price-was {
+  text-decoration: line-through;
+  opacity: 0.6;
+  margin-right: 0.3rem;
 }
 
-.skeleton-card {
-  background: #f5f0eb;
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  overflow: hidden;
-  position: relative;
+.price-now {
+  font-weight: 700;
+  color: #69005A;
+}
 
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.55) 50%,
-      transparent 100%
-    );
-    background-size: 400px 100%;
-    animation: shimmer 1.4s ease-in-out infinite;
+.price-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #FBE3E3;
+  color: #A03030;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.service-description {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #7A3A70;
+  /* Les descriptions saisies en admin peuvent contenir des retours à la ligne */
+  white-space: pre-line;
+}
+
+.select-btn {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #F3B1F1;
+  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #69005A;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: #F8CFF6;
+    transform: translateY(-1px);
   }
 }
 
-.skeleton-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #EBD7E9;
+.services-empty,
+.error {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #8A6A85;
+}
+
+.error {
+  color: #c0392b;
+  background: #ffebee;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+}
+
+// --- Squelette de chargement ---
+
+@keyframes shimmer {
+  0%   { opacity: 0.55; }
+  100% { opacity: 1; }
+}
+
+.skeleton-image {
+  width: 150px;
+  height: 170px;
   flex-shrink: 0;
+  border-radius: 8px;
+  background: #EBD7E9;
+  animation: shimmer 1.3s ease-in-out infinite alternate;
 }
 
 .skeleton-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .skeleton-line {
-  height: 13px;
+  height: 14px;
   border-radius: 6px;
   background: #EBD7E9;
+  animation: shimmer 1.3s ease-in-out infinite alternate;
 }
 
-.skeleton-line-long  { width: 65%; }
-.skeleton-line-short { width: 40%; }
+.skeleton-line-long  { width: 45%; }
+.skeleton-line-short { width: 28%; }
 
-// --- Erreur ---
+// --- Mobile ---
 
-.error {
-  text-align: center;
-  padding: 1rem;
-  color: #c0392b;
-  background: #ffebee;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-}
+@media (max-width: 700px) {
+  .container { padding: 0 1rem 2.5rem; }
 
-// --- Boutons ---
-
-.btn-container {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.btn {
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Raleway', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #F3B1F1 0%, #F8CFF6 100%);
-  color: #69005A;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(243, 177, 241, 0.3);
+  .service-row {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.15rem;
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .service-image,
+  .skeleton-image {
+    width: 96px;
+    height: 110px;
   }
-}
 
-.btn-secondary {
-  background: #EBD7E9;
-  color: #69005A;
-
-  &:hover {
-    background: #FCF4FB;
+  /* Le bouton passe sous le contenu et prend toute la largeur : à cette
+     taille, il serait sinon écrasé contre le bord */
+  .select-btn {
+    width: 100%;
+    align-self: stretch;
   }
 }

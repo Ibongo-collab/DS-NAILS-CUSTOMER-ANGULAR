@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BookingService } from '../../services/booking.service';
 import { IconComponent } from '../shared/icon/icon.component';
 import { DateAvailability } from '../../models/booking.model';
+import { toDateString } from '../../utils/date';
 
 interface DateOption {
   date: string;
@@ -97,7 +98,10 @@ export class DateSelectionComponent implements OnInit {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
-      const dateString = date.toISOString().split('T')[0];
+      // `toDateString` et non `toISOString` : ce dernier bascule en UTC et,
+      // dans un fuseau positif, renvoie la veille entre minuit et l'aube — la
+      // date envoyée au serveur ne correspondrait plus au libellé affiché.
+      const dateString = toDateString(date);
       const dayLabel = `${dayNames[date.getDay()]} ${date.getDate()} ${monthNames[date.getMonth()]}`;
 
       let label: string;
