@@ -7,11 +7,15 @@ import { parseDateString, todayString } from '../../utils/date';
 /** Où en est une promotion par rapport à aujourd'hui. */
 type PromotionState = 'running' | 'scheduled' | 'ended' | 'disabled';
 
+/** Portée de la remise. */
+type Scope = 'all' | 'some';
+
 interface PromotionDraft {
   name: string;
   discount_percent: number | null;
-  /** '' = toutes les prestations */
-  service_id: string;
+  scope: Scope;
+  /** Prestations cochées ; ignoré tant que la portée est « toutes » */
+  service_ids: string[];
   starts_on: string;
   ends_on: string;
 }
@@ -31,12 +35,16 @@ export class AdminPromotionsComponent implements OnInit {
   promotions: Promotion[] = [];
   services: Service[] = [];
 
-  creating = false;
+  saving = false;
   busyId: string | null = null;
+
+  /** Promotion en cours de modification, null en création */
   editingId: string | null = null;
 
   draft: PromotionDraft = this.emptyDraft();
-  edit: PromotionDraft = this.emptyDraft();
+
+  /** Filtre de la liste des prestations à cocher */
+  serviceSearch = '';
 
   constructor(private adminService: AdminService, private cdr: ChangeDetectorRef) {}
 
@@ -58,70 +66,116 @@ export class AdminPromotionsComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ==================== CRÉATION ====================
+  // ==================== FORMULAIRE ====================
 
   private emptyDraft(): PromotionDraft {
-    return { name: '', discount_percent: null, service_id: '', starts_on: '', ends_on: '' };
+    return {
+      name: '',
+      discount_percent: null,
+      scope: 'all',
+      service_ids: [],
+      starts_on: '',
+      ends_on: ''
+    };
   }
 
-  /** Ce qui empêche d'enregistrer, ou '' si la saisie est complète et cohérente. */
-  private problemWith(draft: PromotionDraft): string {
-    const percent = Number(draft.discount_percent);
+  /** Ce qui empêche d'enregistrer, ou '' si la saisie est complète. */
+  private get problem(): string {
+    const percent = Number(this.draft.discount_percent);
 
-    if (!draft.name.trim()) return 'Donnez un nom à la promotion.';
+    if (!this.draft.name.trim()) return 'Donnez un nom à la promotion.';
     if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
       return 'La remise doit être comprise entre 1 et 100 %.';
     }
-    if (!draft.starts_on || !draft.ends_on) return 'Indiquez les dates de début et de fin.';
-    if (draft.ends_on < draft.starts_on) {
+    if (this.draft.scope === 'some' && !this.draft.service_ids.length) {
+      return 'Choisissez au moins une prestation, ou repassez sur « toutes les prestations ».';
+    }
+    if (!this.draft.starts_on || !this.draft.ends_on) return 'Indiquez les dates de début et de fin.';
+    if (this.draft.ends_on < this.draft.starts_on) {
       return 'La date de fin doit être postérieure à la date de début.';
     }
     return '';
   }
 
-  get canCreate(): boolean {
-    return !this.problemWith(this.draft);
+  get canSave(): boolean {
+    return !this.problem;
   }
 
-  get canSaveEdit(): boolean {
-    return !this.problemWith(this.edit);
+  get formTitle(): string {
+    return this.editingId ? 'Modifier la promotion' : 'Créer une promotion';
   }
 
-  private toPayload(draft: PromotionDraft): Partial<Promotion> {
-    return {
-      name: draft.name.trim(),
-      discount_percent: Number(draft.discount_percent),
-      // Le select renvoie '' pour « toutes les prestations » ; la base attend NULL
-      service_id: draft.service_id || null,
-      starts_on: draft.starts_on,
-      ends_on: draft.ends_on
-    };
-  }
-
-  async create(): Promise<void> {
-    const problem = this.problemWith(this.draft);
+  async save(): Promise<void> {
+    const problem = this.problem;
     if (problem) {
       this.error = problem;
       return;
     }
 
-    this.creating = true;
+    this.saving = true;
     this.error = '';
     this.notice = '';
     this.cdr.detectChanges();
 
-    const result = await this.adminService.createPromotion(this.toPayload(this.draft));
-    this.creating = false;
+    const result = await this.adminService.savePromotion(
+      {
+        name: this.draft.name.trim(),
+        discount_percent: Number(this.draft.discount_percent),
+        starts_on: this.draft.starts_on,
+        ends_on: this.draft.ends_on,
+        // Portée « toutes » : aucune prestation rattachée
+        service_ids: this.draft.scope === 'some' ? this.draft.service_ids : []
+      },
+      this.editingId ?? undefined
+    );
+
+    this.saving = false;
 
     if (!result.success) {
-      this.error = result.error || 'La création a échoué.';
+      this.error = result.error || 'L\'enregistrement a échoué.';
       this.cdr.detectChanges();
       return;
     }
 
-    this.draft = this.emptyDraft();
-    this.notice = 'Promotion enregistrée. Les nouveaux prix sont visibles immédiatement.';
+    this.notice = this.editingId
+      ? 'Promotion modifiée.'
+      : 'Promotion enregistrée. Les nouveaux prix sont visibles immédiatement.';
+
+    this.cancelEdit();
     await this.load(false);
+  }
+
+  // ==================== CHOIX DES PRESTATIONS ====================
+
+  /** Prestations proposées à la sélection, filtrées par la recherche. */
+  get pickerServices(): Service[] {
+    const term = this.serviceSearch.trim().toLowerCase();
+    if (!term) return this.services;
+    return this.services.filter(s => s.name.toLowerCase().includes(term));
+  }
+
+  isPicked(serviceId: string): boolean {
+    return this.draft.service_ids.includes(serviceId);
+  }
+
+  togglePick(serviceId: string): void {
+    this.draft.service_ids = this.isPicked(serviceId)
+      ? this.draft.service_ids.filter(id => id !== serviceId)
+      : [...this.draft.service_ids, serviceId];
+  }
+
+  selectAllVisible(): void {
+    const visibles = this.pickerServices.map(s => s.id);
+    this.draft.service_ids = [...new Set([...this.draft.service_ids, ...visibles])];
+  }
+
+  clearPicks(): void {
+    this.draft.service_ids = [];
+  }
+
+  /** Remet la liste à zéro en repassant sur « toutes les prestations ». */
+  onScopeChange(): void {
+    if (this.draft.scope === 'all') this.draft.service_ids = [];
   }
 
   // ==================== MODIFICATION ====================
@@ -130,42 +184,28 @@ export class AdminPromotionsComponent implements OnInit {
     this.editingId = promotion.id;
     this.error = '';
     this.notice = '';
-    this.edit = {
+    this.serviceSearch = '';
+
+    const cibles = promotion.service_ids ?? [];
+    this.draft = {
       name: promotion.name,
       discount_percent: Number(promotion.discount_percent),
-      service_id: promotion.service_id || '',
+      scope: cibles.length ? 'some' : 'all',
+      service_ids: [...cibles],
       starts_on: promotion.starts_on,
       ends_on: promotion.ends_on
     };
+
+    // Le formulaire est en haut de l'écran ; sans cela la modification
+    // paraîtrait sans effet depuis le bas du tableau.
+    document.querySelector('.promo-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   cancelEdit(): void {
     this.editingId = null;
+    this.draft = this.emptyDraft();
+    this.serviceSearch = '';
     this.error = '';
-  }
-
-  async saveEdit(promotion: Promotion): Promise<void> {
-    const problem = this.problemWith(this.edit);
-    if (problem) {
-      this.error = problem;
-      return;
-    }
-
-    this.busyId = promotion.id;
-    this.error = '';
-    this.cdr.detectChanges();
-
-    const result = await this.adminService.updatePromotion(promotion.id, this.toPayload(this.edit));
-    this.busyId = null;
-
-    if (!result.success) {
-      this.error = result.error || 'La modification a échoué.';
-      this.cdr.detectChanges();
-      return;
-    }
-
-    this.editingId = null;
-    await this.load(false);
   }
 
   async toggleActive(promotion: Promotion): Promise<void> {
@@ -174,9 +214,7 @@ export class AdminPromotionsComponent implements OnInit {
     this.notice = '';
     this.cdr.detectChanges();
 
-    const result = await this.adminService.updatePromotion(promotion.id, {
-      active: !promotion.active
-    });
+    const result = await this.adminService.setPromotionActive(promotion.id, !promotion.active);
     this.busyId = null;
 
     if (!result.success) {
@@ -208,6 +246,8 @@ export class AdminPromotionsComponent implements OnInit {
       this.cdr.detectChanges();
       return;
     }
+
+    if (this.editingId === promotion.id) this.cancelEdit();
     await this.load(false);
   }
 
@@ -216,7 +256,7 @@ export class AdminPromotionsComponent implements OnInit {
   state(promotion: Promotion): PromotionState {
     if (!promotion.active) return 'disabled';
 
-    const today = this.today();
+    const today = todayString();
     if (today < promotion.starts_on) return 'scheduled';
     if (today > promotion.ends_on) return 'ended';
     return 'running';
@@ -237,12 +277,24 @@ export class AdminPromotionsComponent implements OnInit {
     return this.promotions.filter(p => this.state(p) === 'running').length;
   }
 
+  /** « Toutes les prestations », « Manucure », ou « 3 prestations ». */
   scopeLabel(promotion: Promotion): string {
-    if (!promotion.service_id) return 'Toutes les prestations';
+    const cibles = promotion.service_ids ?? [];
+    if (!cibles.length) return 'Toutes les prestations';
+    if (cibles.length === 1) return this.serviceName(cibles[0]);
+    return `${cibles.length} prestations`;
+  }
 
-    const service = this.services.find(s => s.id === promotion.service_id);
+  /** Détail complet, en infobulle sur les portées résumées. */
+  scopeDetail(promotion: Promotion): string {
+    const cibles = promotion.service_ids ?? [];
+    if (cibles.length < 2) return '';
+    return cibles.map(id => this.serviceName(id)).join(', ');
+  }
+
+  private serviceName(id: string): string {
     // La prestation peut avoir été supprimée depuis
-    return service ? service.name : 'Prestation supprimée';
+    return this.services.find(s => s.id === id)?.name ?? 'Prestation supprimée';
   }
 
   formatPercent(value: number): string {
@@ -254,9 +306,5 @@ export class AdminPromotionsComponent implements OnInit {
     const date = parseDateString(dateString);
     const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-  }
-
-  private today(): string {
-    return todayString();
   }
 }

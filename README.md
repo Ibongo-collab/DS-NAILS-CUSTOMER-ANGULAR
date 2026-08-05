@@ -128,10 +128,15 @@ créneau à la même seconde ne peuvent pas réussir toutes les deux.
   200 ko pour `@supabase/supabase-js` et le reste pour Angular. Le seuil laisse
   une marge d'une trentaine de ko, de quoi révéler un écran qui cesserait
   d'être chargé à la demande.
-- **feuille de style de composant — alerte à 6 ko.** Les styles communs de
-  l'administration ne sont donc pas partagés par `@use` — Sass en recopierait
-  l'intégralité dans chaque écran. Ils sont posés une fois par
+- **feuille de style de composant — alerte à 8 ko, erreur à 10 ko.** Les styles
+  communs de l'administration ne sont pas partagés par `@use` : Sass en
+  recopierait l'intégralité dans chaque écran. Ils sont posés une fois par
   `admin-layout`, déclaré `ViewEncapsulation.None` et porté par `.admin-shell`.
+
+  Cette feuille-là pèse donc à elle seule ce que sept écrans se partagent, et
+  frôle le seuil : c'est le prix de la déduplication, pas un dérapage. Le seuil
+  a été porté de 6 à 8 ko pour cette raison — il reste assez bas pour signaler
+  un vrai composant qui gonfle, comme l'écran des prestations l'avait été.
 
 ## 🎨 Parcours utilisateur
 

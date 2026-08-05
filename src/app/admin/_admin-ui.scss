@@ -117,10 +117,10 @@
   }
 
   .badge-pending   { background: #FFF3D6; color: #8A6100; }
-  .badge-confirmed { background: #E1F5E7; color: #1F6B3A; }
+  .badge-confirmed,
+  .badge-active    { background: #E1F5E7; color: #1F6B3A; }
   .badge-completed { background: #EAE6F5; color: #4B3A80; }
   .badge-cancelled { background: #FBE3E3; color: #A03030; }
-  .badge-active    { background: #E1F5E7; color: #1F6B3A; }
   .badge-inactive  { background: #EFE7EE; color: #7A3A70; }
 
   // --- Boutons ---
@@ -247,6 +247,47 @@
     /* Compense l'absence d'étiquette au-dessus : le bouton reste sur la même
        ligne de base que les champs, qui en ont une. */
     flex-shrink: 0;
+  }
+
+  // --- Récapitulatif d'une fenêtre modale ---
+  // Partagé par la clôture d'une réservation et le détail du planning.
+
+  .modal-recap {
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    background: #FCF4FB;
+    margin-bottom: 1.15rem;
+  }
+
+  .recap-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1.5rem;
+    padding: 0.32rem 0;
+    font-size: 0.87rem;
+  }
+
+  .recap-label {
+    color: #7A3A70;
+    flex-shrink: 0;
+
+    /* Deux-points ajoutés en CSS plutôt que dans chaque gabarit : l'étiquette
+       « Client » est calculée selon la civilité, elle serait sinon la seule à
+       devoir les porter elle-même. Espace insécable avant, comme le veut
+       l'usage français. */
+    &::after { content: '\00a0:'; }
+  }
+
+  .recap-value {
+    color: #4A2344;
+    text-align: right;
+    word-break: break-word;
+
+    &.strong {
+      font-weight: 700;
+      color: #69005A;
+    }
   }
 
 }

@@ -9,15 +9,18 @@
     }
   </header>
 
-  <nav class="admin-tabs">
-    <a routerLink="reservations" routerLinkActive="active" class="admin-tab">Réservations</a>
-    <a routerLink="statistiques" routerLinkActive="active" class="admin-tab">Statistiques</a>
-    <a routerLink="prestations" routerLinkActive="active" class="admin-tab">Prestations</a>
-    <a routerLink="promotions" routerLinkActive="active" class="admin-tab">Promotions</a>
-    <a routerLink="horaires" routerLinkActive="active" class="admin-tab">Horaires</a>
-    <a routerLink="indisponibilites" routerLinkActive="active" class="admin-tab">Indisponibilités</a>
-    <a routerLink="notifications" routerLinkActive="active" class="admin-tab">Notifications</a>
-  </nav>
+  <div class="admin-tabs-rail">
+    <nav class="admin-tabs" #tabs>
+      <a routerLink="reservations" routerLinkActive="active" class="admin-tab">Réservations</a>
+      <a routerLink="planning" routerLinkActive="active" class="admin-tab">Planning</a>
+      <a routerLink="statistiques" routerLinkActive="active" class="admin-tab">Statistiques</a>
+      <a routerLink="prestations" routerLinkActive="active" class="admin-tab">Prestations</a>
+      <a routerLink="promotions" routerLinkActive="active" class="admin-tab">Promotions</a>
+      <a routerLink="horaires" routerLinkActive="active" class="admin-tab">Horaires</a>
+      <a routerLink="indisponibilites" routerLinkActive="active" class="admin-tab">Indisponibilités</a>
+      <a routerLink="notifications" routerLinkActive="active" class="admin-tab">Notifications</a>
+    </nav>
+  </div>
 
   <router-outlet />
 </div>

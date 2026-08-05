@@ -1,5 +1,15 @@
-import { Component, ViewEncapsulation } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  AfterViewInit,
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewChild,
+  ViewEncapsulation,
+  inject
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -22,10 +32,48 @@ import { AuthService } from '../../services/auth.service';
    */
   encapsulation: ViewEncapsulation.None
 })
-export class AdminLayoutComponent {
-  constructor(private authService: AuthService) {}
+export class AdminLayoutComponent implements AfterViewInit {
+  @ViewChild('tabs') tabsRef?: ElementRef<HTMLElement>;
+
+  private destroyRef = inject(DestroyRef);
+
+  constructor(private authService: AuthService, private router: Router) {}
 
   get adminName(): string {
     return this.authService.profile?.full_name || this.authService.getUserEmail();
+  }
+
+  ngAfterViewInit(): void {
+    this.revealActiveTab();
+
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.revealActiveTab());
+  }
+
+  /**
+   * Ramène l'onglet courant dans la partie visible du rail.
+   *
+   * Les onglets défilent sur une seule ligne : arriver directement sur
+   * « Notifications », le dernier, laisserait le rail au début et l'onglet
+   * actif hors de l'écran — l'utilisateur ne verrait pas où il se trouve.
+   */
+  private revealActiveTab(): void {
+    const rail = this.tabsRef?.nativeElement;
+    if (!rail) return;
+
+    // Après la navigation, `routerLinkActive` pose sa classe au cycle suivant
+    requestAnimationFrame(() => {
+      const actif = rail.querySelector<HTMLElement>('.admin-tab.active');
+      if (!actif) return;
+
+      // Rien à faire si tout tient déjà : un défilement inutile serait perçu
+      // comme un tremblement au chargement.
+      if (rail.scrollWidth <= rail.clientWidth) return;
+
+      // `block: 'nearest'` : on ne veut décaler que l'horizontale, pas faire
+      // sauter la page verticalement.
+      actif.scrollIntoView({ inline: 'center', block: 'nearest' });
+    });
   }
 }

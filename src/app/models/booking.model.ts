@@ -20,8 +20,13 @@ export interface Promotion {
   id: string;
   name: string;
   discount_percent: number;
-  /** null = s'applique à toutes les prestations */
-  service_id: string | null;
+  /**
+   * Prestations visées. **Liste vide = toutes les prestations.**
+   *
+   * Reflet de la table de liaison `promotion_services` : aucune ligne
+   * rattachée signifie que la promotion vaut partout.
+   */
+  service_ids: string[];
   starts_on: string;
   ends_on: string;
   active: boolean;
@@ -105,8 +110,14 @@ export type UnavailabilityReason = 'closed' | 'blocked' | 'full';
 export interface DateAvailability {
   available: boolean;
   reason: UnavailabilityReason | null;
-  /** Nombre de créneaux encore libres */
-  slots: number;
+  /**
+   * Créneaux de la journée, horaires déjà passés exclus.
+   *
+   * Ils sont calculés en même temps que la disponibilité de la date, et non
+   * relus au moment du clic : c'est la même donnée, la recalculer coûterait un
+   * aller-retour réseau pour un résultat identique.
+   */
+  slots: TimeSlot[];
 }
 
 export interface BookingRequest {

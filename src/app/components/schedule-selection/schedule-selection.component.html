@@ -1,0 +1,178 @@
+<div class="container">
+  <div class="progress-bar">
+    <div class="progress-fill" [style.width]="'50%'"></div>
+  </div>
+  <div class="progress-label">
+    <button
+      type="button"
+      class="back-arrow"
+      (click)="goBack()"
+      aria-label="Revenir au choix de la prestation">
+      <app-icon name="arrow-left" [size]="18"></app-icon>
+    </button>
+    <span>Étape 1/2 - Date et heure</span>
+  </div>
+
+  <main class="main-content">
+
+    <!-- Rappel de la prestation choisie -->
+    @if (service; as chosen) {
+      <p class="section-eyebrow">Rendez-vous</p>
+
+      <section class="service-card">
+        <button
+          type="button"
+          class="clear-service"
+          (click)="clearService()"
+          aria-label="Choisir une autre prestation"
+          title="Choisir une autre prestation">
+          &times;
+        </button>
+
+        <div class="service-body">
+          @if (chosen.image_url) {
+            <img class="service-image" [src]="chosen.image_url" [alt]="chosen.name">
+          }
+
+          <div class="service-text">
+            <h1 class="service-name">{{ chosen.name }}</h1>
+
+            <p class="service-meta">
+              {{ chosen.duration_minutes | duration }} à
+              @if (pricing && pricing.discountPercent) {
+                <span class="price-was">{{ priceLabel(pricing.basePrice) }}</span>
+                <span class="price-now">{{ priceLabel(pricing.finalPrice) }}</span>
+                <span class="price-tag">−{{ pricing.discountPercent }} %</span>
+              } @else {
+                {{ priceLabel(pricing?.basePrice ?? chosen.price) }}
+              }
+            </p>
+
+            @if (chosen.description) {
+              <p class="service-description" [class.collapsed]="!descriptionOpen">
+                {{ chosen.description }}
+              </p>
+              <button type="button" class="link-btn" (click)="toggleDescription()">
+                {{ descriptionOpen ? 'Réduire' : 'Tout afficher' }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- Calendrier + créneaux -->
+    <section class="schedule-card">
+      <div class="calendar">
+        <div class="calendar-head">
+          <button
+            type="button"
+            class="month-nav"
+            [disabled]="!canGoPrevious"
+            (click)="previousMonth()"
+            aria-label="Mois précédent">
+            <app-icon name="arrow-left" [size]="16"></app-icon>
+          </button>
+
+          <span class="month-label">{{ monthLabel }}</span>
+
+          <button
+            type="button"
+            class="month-nav"
+            [disabled]="!canGoNext"
+            (click)="nextMonth()"
+            aria-label="Mois suivant">
+            <app-icon name="arrow-right" [size]="16"></app-icon>
+          </button>
+        </div>
+
+        <table class="calendar-grid">
+          <thead>
+            <tr>
+              @for (label of weekDayLabels; track $index) {
+                <th scope="col">{{ label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (week of weeks; track $index) {
+              <tr>
+                @for (cell of week; track $index) {
+                  <td>
+                    @if (cell) {
+                      <button
+                        type="button"
+                        class="day"
+                        [class.selected]="selectedDate === cell.date"
+                        [class.today]="cell.isToday"
+                        [disabled]="!cell.selectable"
+                        [attr.aria-disabled]="!cell.selectable"
+                        [attr.title]="cell.reason || null"
+                        (click)="selectDate(cell)">
+                        {{ cell.day }}
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        @if (loadingDates) {
+          <p class="calendar-note">Recherche des jours disponibles…</p>
+        } @else {
+          <p class="calendar-note">Réservation possible jusqu'au {{ horizonLabel }}.</p>
+        }
+      </div>
+
+      <!-- Créneaux du jour retenu -->
+      <div class="slots">
+        @if (!selectedDate) {
+          <p class="slots-empty">Choisissez une date pour voir les horaires disponibles.</p>
+        } @else {
+          <p class="slots-date">{{ selectedDateLabel }}</p>
+
+          @if (loadingDates) {
+            <div class="slots-grid">
+              @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+                <div class="slot-skeleton"></div>
+              }
+            </div>
+          } @else if (timeSlots.length) {
+            <div class="slots-grid">
+              @for (slot of timeSlots; track slot.time) {
+                <button
+                  type="button"
+                  class="slot"
+                  [class.selected]="selectedTime === slot.time"
+                  [disabled]="!slot.available"
+                  (click)="selectTime(slot)">
+                  {{ slot.time }}
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="slots-empty">
+              Plus aucun horaire libre ce jour-là. Choisissez une autre date.
+            </p>
+          }
+        }
+
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+      </div>
+    </section>
+
+    <div class="btn-container">
+      <button class="btn btn-secondary" (click)="goBack()">Retour</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!canContinue"
+        (click)="continue()">
+        Continuer
+      </button>
+    </div>
+  </main>
+</div>

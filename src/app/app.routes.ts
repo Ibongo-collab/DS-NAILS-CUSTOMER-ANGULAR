@@ -19,19 +19,17 @@ export const routes: Routes = [
       )
   },
   {
+    // Date et heure sur un même écran
     path: 'date',
     loadComponent: () =>
-      import('./components/date-selection/date-selection.component').then(
-        m => m.DateSelectionComponent
+      import('./components/schedule-selection/schedule-selection.component').then(
+        m => m.ScheduleSelectionComponent
       )
   },
-  {
-    path: 'time',
-    loadComponent: () =>
-      import('./components/time-selection/time-selection.component').then(
-        m => m.TimeSelectionComponent
-      )
-  },
+  // Ancienne étape « choix de l'horaire », fusionnée avec la précédente.
+  // Conservée en redirection : un onglet resté ouvert ou un retour arrière
+  // tomberait sinon sur la page d'accueil, parcours perdu.
+  { path: 'time', redirectTo: 'date' },
   {
     path: 'info',
     loadComponent: () =>

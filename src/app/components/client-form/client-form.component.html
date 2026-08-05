@@ -2,7 +2,16 @@
   <div class="progress-bar">
     <div class="progress-fill" [style.width]="'100%'"></div>
   </div>
-  <div class="progress-label">Étape 3/3 - Vos informations</div>
+  <div class="progress-label">
+    <button
+      type="button"
+      class="back-arrow"
+      (click)="goBack()"
+      aria-label="Revenir au choix de la date et de l'heure">
+      <app-icon name="arrow-left" [size]="18"></app-icon>
+    </button>
+    <span>Étape 2/2 - Vos informations</span>
+  </div>
 
   <main class="main-content">
     <h2 class="step-title">Vos informations</h2>

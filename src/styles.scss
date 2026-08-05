@@ -146,3 +146,61 @@ h1, h2, h3, h4, h5, h6 {
 
   .btn-sm { margin-left: 0; }
 }
+
+/* ------------------------------------------------------------------
+   En-tête des étapes de réservation
+
+   Partagé par les deux écrans du parcours (date/heure, puis informations).
+   Défini ici plutôt que dans chaque composant : identique des deux côtés, il
+   y serait recopié à l'octet près — c'est ce qui faisait dépasser le budget
+   de feuille de style de l'écran date et heure.
+   ------------------------------------------------------------------ */
+
+.progress-bar {
+  height: 3px;
+  background: #EBD7E9;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F3B1F1, #F8CFF6);
+  transition: width 0.5s ease;
+}
+
+/* La flèche est en absolu, pas dans un flux flex : le libellé reste ainsi
+   centré sur la barre au lieu d'être décalé de la largeur du bouton. */
+.progress-label {
+  position: relative;
+  text-align: center;
+  padding: 1rem 3.25rem;
+  font-size: 0.9rem;
+  color: #69005A;
+  font-weight: 500;
+  background: #FCF4FB;
+}
+
+.back-arrow {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #69005A;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.back-arrow:hover { background: #F3E4F1; }
+
+.back-arrow:focus-visible {
+  outline: 2px solid #69005A;
+  outline-offset: 2px;
+}

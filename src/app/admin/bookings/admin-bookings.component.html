@@ -187,6 +187,7 @@
             <th>Client</th>
             <th>Contact</th>
             <th>Prestation</th>
+            <th class="cell-amount">Montant</th>
             <th>Statut</th>
             <th class="cell-actions">Actions</th>
           </tr>
@@ -202,6 +203,15 @@
                 <div class="cell-muted">{{ booking.client_email }}</div>
               </td>
               <td>{{ booking.services?.name || '—' }}</td>
+              <td class="cell-amount">
+                <span
+                  [class.amount-estimated]="isCurrentTariff(booking)"
+                  [attr.title]="isCurrentTariff(booking)
+                    ? 'Tarif actuel de la prestation : cette réservation est antérieure au figement des prix.'
+                    : null">
+                  {{ amount(booking) }}
+                </span>
+              </td>
               <td>
                 <span class="badge" [class]="'badge badge-' + booking.status">
                   {{ statusLabel(booking.status) }}
@@ -240,7 +250,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="state">Aucune réservation ne correspond à ces filtres.</td>
+              <td colspan="8" class="state">Aucune réservation ne correspond à ces filtres.</td>
             </tr>
           }
         </tbody>

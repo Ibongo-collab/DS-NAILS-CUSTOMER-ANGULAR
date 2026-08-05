@@ -1,0 +1,282 @@
+/* La hauteur de la grille est posée par le composant : elle dépend de
+   l'amplitude d'ouverture, qui varie d'un salon à l'autre. Tout le reste se
+   positionne en pourcentage de cette hauteur. */
+
+.head-note {
+  margin-left: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #8A6A85;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.week-label {
+  min-width: 11rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #69005A;
+}
+
+/* Sur un écran étroit, sept colonnes lisibles ne tiennent pas : la grille
+   défile horizontalement plutôt que d'écraser les journées. */
+.planning-scroll {
+  overflow-x: auto;
+  padding: 0 1.35rem 1.35rem;
+}
+
+.planning {
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(112px, 1fr));
+  grid-template-rows: auto 1fr;
+  min-width: 760px;
+}
+
+// --- En-têtes ---
+
+.gutter-head {
+  border-bottom: 1px solid rgba(105, 0, 90, 0.12);
+}
+
+.day-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.25rem 0.6rem;
+  border-bottom: 1px solid rgba(105, 0, 90, 0.12);
+  border-left: 1px solid rgba(105, 0, 90, 0.07);
+
+  &.is-today {
+    background: #FCF4FB;
+    border-bottom-color: #F3B1F1;
+  }
+
+  &.is-closed { opacity: 0.55; }
+}
+
+.day-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #A566A0;
+}
+
+.day-number {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #69005A;
+}
+
+.is-today .day-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #F3B1F1;
+  color: #4A0040;
+}
+
+.day-closed {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8A6A85;
+}
+
+// --- Corps de la grille ---
+
+.gutter,
+.day-column {
+  position: relative;
+}
+
+.hour-label {
+  position: absolute;
+  right: 0.4rem;
+  /* Remonté d'une demi-ligne pour être aligné sur son trait */
+  transform: translateY(-50%);
+  font-size: 0.68rem;
+  color: #A08A9C;
+  white-space: nowrap;
+}
+
+.day-column {
+  border-left: 1px solid rgba(105, 0, 90, 0.07);
+
+  &.is-today { background: rgba(252, 244, 251, 0.5); }
+
+  /* Un jour de fermeture doit se lire d'un coup d'œil, sans avoir à
+     remonter à l'en-tête */
+  &.is-closed {
+    background: repeating-linear-gradient(
+      45deg,
+      #FAF7F9,
+      #FAF7F9 6px,
+      #F2ECF1 6px,
+      #F2ECF1 12px
+    );
+  }
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(105, 0, 90, 0.07);
+}
+
+.blocked-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(122, 58, 112, 0.09),
+    rgba(122, 58, 112, 0.09) 5px,
+    rgba(122, 58, 112, 0.16) 5px,
+    rgba(122, 58, 112, 0.16) 10px
+  );
+  overflow: hidden;
+
+  span {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #7A3A70;
+    opacity: 0.75;
+  }
+}
+
+// --- Rendez-vous ---
+
+.booking {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 3px 6px;
+  border: none;
+  border-left: 3px solid;
+  border-radius: 5px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: filter 0.15s ease;
+
+  &:hover { filter: brightness(0.96); }
+  &:focus-visible { outline: 2px solid #69005A; outline-offset: 1px; }
+}
+
+.booking-time {
+  font-size: 0.63rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.booking-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  /* Un rendez-vous court ne laisse qu'une ligne : mieux vaut couper que
+     déborder sur le créneau suivant */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-service {
+  font-size: 0.65rem;
+  line-height: 1.2;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-pending   { background: #FFF3D6; border-color: #E0A400; color: #6E4E00; }
+.booking-confirmed { background: #E1F5E7; border-color: #2E9E5B; color: #14532B; }
+.booking-completed { background: #EAE6F5; border-color: #6B57B8; color: #3A2C66; }
+
+// --- Légende ---
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.35rem 1.35rem;
+  font-size: 0.78rem;
+  color: #7A3A70;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dot-pending   { background: #FFF3D6; border: 1px solid #E0A400; }
+.dot-confirmed { background: #E1F5E7; border: 1px solid #2E9E5B; }
+.dot-completed { background: #EAE6F5; border: 1px solid #6B57B8; }
+.dot-blocked   { background: rgba(122, 58, 112, 0.16); border: 1px solid #7A3A70; }
+
+.legend-note {
+  color: #8A6A85;
+  font-style: italic;
+}
+
+// --- Mobile : rendre au calendrier toute la largeur ---
+
+@media (max-width: 760px) {
+  /* Deux marges se cumulaient de chaque côté — celle de la coquille admin et
+     celle de la zone défilante — soit près de 80 px pris sur une largeur de
+     téléphone, presque une colonne de journée. Le panneau vient donc toucher
+     les bords de l'écran ; seuls l'en-tête et la légende gardent leur retrait,
+     parce que du texte collé au bord se lit mal. */
+  .planning-panel {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .planning-scroll {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Sans cela la navigation se serre à gauche et laisse le reste de la ligne
+     vide, alors que l'espace est justement ce qui manque. */
+  .week-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .week-label {
+    min-width: 0;
+    flex: 1;
+  }
+}

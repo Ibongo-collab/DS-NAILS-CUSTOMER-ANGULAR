@@ -5,26 +5,6 @@
   background: var(--card);
 }
 
-.progress-bar {
-  height: 3px;
-  background: #EBD7E9;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #F3B1F1, #F8CFF6);
-  transition: width 0.5s ease;
-}
-
-.progress-label {
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.9rem;
-  color: #69005A;
-  font-weight: 500;
-  background: #FCF4FB;
-}
-
 .main-content {
   padding: 2rem 1.5rem;
   display: flex;

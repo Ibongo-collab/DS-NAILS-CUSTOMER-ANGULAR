@@ -42,3 +42,24 @@ export function parseDateString(dateString: string): Date {
 export function isoDayOfWeek(dateString: string): number {
   return parseDateString(dateString).getDay() || 7;
 }
+
+/**
+ * Dernier jour du mois de la date donnée, au format `YYYY-MM-DD`.
+ *
+ * Le jour 0 du mois suivant est le dernier du mois courant : `Date` gère ainsi
+ * les mois de 30 ou 31 jours et les années bissextiles sans table de longueurs.
+ */
+export function endOfMonth(dateString: string): string {
+  const date = parseDateString(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return toDateString(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+}
+
+/** Nombre de jours entre deux dates de calendrier, bornes comprises. */
+export function daysBetween(fromDate: string, toDate: string): number {
+  const debut = parseDateString(fromDate);
+  const fin = parseDateString(toDate);
+  if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) return 0;
+  // Arrondi : un changement d'heure d'été décale la différence d'une heure
+  return Math.round((fin.getTime() - debut.getTime()) / 86_400_000) + 1;
+}

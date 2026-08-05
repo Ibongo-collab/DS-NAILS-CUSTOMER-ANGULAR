@@ -1,0 +1,158 @@
+<div class="panel planning-panel">
+  <div class="panel-head">
+    <h2>
+      Planning de la semaine
+      @if (!loading) {
+        <span class="head-note">{{ weekCount }} rendez-vous</span>
+      }
+    </h2>
+
+    <div class="week-nav">
+      <button class="btn-sm" (click)="previousWeek()" aria-label="Semaine précédente">‹</button>
+      <span class="week-label">{{ weekLabel }}</span>
+      <button class="btn-sm" (click)="nextWeek()" aria-label="Semaine suivante">›</button>
+      <button class="btn-sm" [disabled]="isCurrentWeek" (click)="goToday()">Cette semaine</button>
+      <button class="btn-sm" (click)="load()" [disabled]="loading">Actualiser</button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="state">Chargement du planning…</div>
+  } @else {
+    <div class="planning-scroll">
+      <div class="planning">
+
+        <!-- En-têtes des jours -->
+        <div class="gutter-head"></div>
+        @for (day of days; track day.date) {
+          <div class="day-head" [class.is-today]="day.isToday" [class.is-closed]="day.closed">
+            <span class="day-name">{{ day.dayName }}</span>
+            <span class="day-number">{{ day.dayNumber }}</span>
+            @if (day.closed) {
+              <span class="day-closed">Fermé</span>
+            }
+          </div>
+        }
+
+        <!-- Colonne des heures -->
+        <div class="gutter" [style.height.px]="gridHeight">
+          @for (hour of hourLabels; track hour.top) {
+            <span class="hour-label" [style.top.%]="hour.top">{{ hour.label }}</span>
+          }
+        </div>
+
+        <!-- Une colonne par jour -->
+        @for (day of days; track day.date) {
+          <div
+            class="day-column"
+            [style.height.px]="gridHeight"
+            [class.is-today]="day.isToday"
+            [class.is-closed]="day.closed">
+
+            @for (hour of hourLabels; track hour.top) {
+              <div class="hour-line" [style.top.%]="hour.top"></div>
+            }
+
+            @for (band of day.blocked; track $index) {
+              <div
+                class="blocked-band"
+                [style.top.%]="band.top"
+                [style.height.%]="band.height"
+                [attr.title]="band.reason || 'Indisponible'">
+                <span>Indisponible</span>
+              </div>
+            }
+
+            @for (placed of day.bookings; track placed.booking.id) {
+              <button
+                type="button"
+                [class]="'booking booking-' + placed.booking.status"
+                [style.top.%]="placed.top"
+                [style.height.%]="placed.height"
+                [style.left.%]="placed.left"
+                [style.width.%]="placed.width"
+                (click)="open(placed.booking)"
+                [attr.title]="placed.booking.client_name + ' — ' + (placed.booking.services?.name || '')">
+                <span class="booking-time">{{ shortTime(placed.booking.start_time) }}</span>
+                <span class="booking-name">{{ placed.booking.client_name }}</span>
+                <span class="booking-service">{{ placed.booking.services?.name }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><i class="dot dot-pending"></i> En attente</span>
+      <span class="legend-item"><i class="dot dot-confirmed"></i> Confirmé</span>
+      <span class="legend-item"><i class="dot dot-completed"></i> Terminé</span>
+      <span class="legend-item"><i class="dot dot-blocked"></i> Indisponibilité</span>
+      <span class="legend-note">
+        Les réservations annulées ne sont pas affichées : leur créneau est de nouveau libre.
+      </span>
+    </div>
+  }
+</div>
+
+@if (selected; as booking) {
+  <div class="modal-overlay" (click)="close()">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="planning-detail-title"
+      (click)="$event.stopPropagation()">
+
+      <h3 class="modal-title" id="planning-detail-title">{{ booking.client_name }}</h3>
+      <p class="modal-sub">
+        {{ formatDate(booking.booking_date) }} · {{ hourRange(booking) }}
+      </p>
+
+      <div class="modal-recap">
+        <div class="recap-row">
+          <span class="recap-label">Statut</span>
+          <span class="recap-value">
+            <span class="badge" [class]="'badge badge-' + booking.status">
+              {{ statusLabel(booking.status) }}
+            </span>
+          </span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Prestation</span>
+          <span class="recap-value">{{ booking.services?.name || '—' }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">{{ clientLabel(booking) }}</span>
+          <span class="recap-value">{{ booking.client_name }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Téléphone</span>
+          <span class="recap-value">{{ booking.client_phone || '—' }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Email</span>
+          <span class="recap-value">{{ booking.client_email || '—' }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Montant</span>
+          <span class="recap-value strong">{{ amount(booking) }}</span>
+        </div>
+        @if (booking.notes) {
+          <div class="recap-row">
+            <span class="recap-label">Notes</span>
+            <span class="recap-value">{{ booking.notes }}</span>
+          </div>
+        }
+      </div>
+
+      <p class="modal-hint">
+        Confirmer, terminer ou annuler se fait depuis l'onglet <strong>Réservations</strong>.
+      </p>
+
+      <div class="modal-actions">
+        <button class="btn-sm" (click)="close()">Fermer</button>
+      </div>
+    </div>
+  </div>
+}

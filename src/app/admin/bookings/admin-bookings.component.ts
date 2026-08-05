@@ -204,13 +204,34 @@ export class AdminBookingsComponent implements OnInit {
     return 'Client(e)';
   }
 
-  /** Montant qui sera comptabilisé : le tarif figé, sinon celui de la prestation. */
-  completionAmount(booking: Booking): string {
-    const amount = booking.price_at_booking ?? booking.services?.price;
-    if (amount === null || amount === undefined) return 'montant inconnu';
+  /**
+   * Montant de la réservation : le tarif **figé à la réservation**, remises
+   * comprises. À défaut — réservations antérieures à cette colonne — le tarif
+   * actuel de la prestation, qui n'est qu'une approximation.
+   */
+  amount(booking: Booking): string {
+    const montant = booking.price_at_booking ?? booking.services?.price;
+    if (montant === null || montant === undefined) return '—';
     return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
-      Math.round(Number(amount))
+      Math.round(Number(montant))
     )} FCFA`;
+  }
+
+  /**
+   * Vrai quand le montant affiché est le tarif actuel de la prestation, faute
+   * de tarif figé. Ce n'est alors pas ce qui a été convenu avec la cliente :
+   * l'écran doit le signaler plutôt que de laisser croire le contraire.
+   */
+  isCurrentTariff(booking: Booking): boolean {
+    return (booking.price_at_booking === null || booking.price_at_booking === undefined)
+      && booking.services?.price !== null
+      && booking.services?.price !== undefined;
+  }
+
+  /** Montant qui sera comptabilisé, tel qu'annoncé dans la fenêtre de clôture. */
+  completionAmount(booking: Booking): string {
+    const montant = this.amount(booking);
+    return montant === '—' ? 'montant inconnu' : montant;
   }
 
   async setStatus(booking: Booking, status: BookingStatus): Promise<void> {

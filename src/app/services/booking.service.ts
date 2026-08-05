@@ -32,10 +32,6 @@ export class BookingService {
 
   public bookingState$ = this.bookingStateSubject.asObservable();
 
-  private availableSlotsCache = new Map<string, { slots: TimeSlot[], timestamp: number }>();
-  private CACHE_DURATION = 30000;
-
-
   constructor(private supabase: SupabaseService) {}
 
   // ==================== SERVICES ====================
@@ -113,6 +109,22 @@ export class BookingService {
 
   // ==================== PROMOTIONS ====================
 
+  /**
+   * Colonnes d'une promotion, prestations rattachées comprises.
+   *
+   * PostgREST sait imbriquer la table de liaison : une seule requête suffit,
+   * pas de seconde lecture pour connaître la portée.
+   */
+  private static readonly PROMOTION_SELECT = '*, promotion_services(service_id)';
+
+  /** Aplatit l'imbrication PostgREST en une simple liste d'identifiants. */
+  private toPromotions(rows: unknown): Promotion[] {
+    return ((rows as any[]) ?? []).map(row => ({
+      ...row,
+      service_ids: (row.promotion_services ?? []).map((lien: any) => lien.service_id)
+    })) as Promotion[];
+  }
+
   /** Promotions en cours à la date donnée. Lecture publique. */
   getActivePromotions(onDate?: string): Observable<Promotion[]> {
     const day = onDate || todayString();
@@ -120,7 +132,7 @@ export class BookingService {
     return from(
       this.supabase.client
         .from('promotions')
-        .select('*')
+        .select(BookingService.PROMOTION_SELECT)
         .eq('active', true)
         .lte('starts_on', day)
         .gte('ends_on', day)
@@ -130,7 +142,33 @@ export class BookingService {
           console.error('Erreur lors de la récupération des promotions:', response.error);
           return [];
         }
-        return response.data as Promotion[];
+        return this.toPromotions(response.data);
+      })
+    );
+  }
+
+  /**
+   * Promotions qui touchent, même partiellement, la période demandée.
+   *
+   * L'écran de choix de la date propose deux semaines : plutôt qu'une requête
+   * par jour survolé, on récupère une fois toutes les promotions de la fenêtre
+   * et `bestPromotion` retient ensuite celle qui vaut pour le jour choisi.
+   */
+  getPromotionsInRange(fromDate: string, toDate: string): Observable<Promotion[]> {
+    return from(
+      this.supabase.client
+        .from('promotions')
+        .select(BookingService.PROMOTION_SELECT)
+        .eq('active', true)
+        .lte('starts_on', toDate)
+        .gte('ends_on', fromDate)
+    ).pipe(
+      map(response => {
+        if (response.error) {
+          console.error('Erreur lors de la récupération des promotions:', response.error);
+          return [];
+        }
+        return this.toPromotions(response.data);
       })
     );
   }
@@ -185,67 +223,6 @@ export class BookingService {
 
   // ==================== CRÉNEAUX DISPONIBLES ====================
 
-  async getAvailableSlots(date: string, serviceId: string): Promise<TimeSlot[]> {
-    const cacheKey = `${date}-${serviceId}`;
-    const cached = this.availableSlotsCache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      return this.filterPastSlots(date, cached.slots);
-    }
-
-    try {
-      const { data: service } = await this.supabase.client
-        .from('services')
-        .select('duration_minutes')
-        .eq('id', serviceId)
-        .single();
-
-      if (!service) throw new Error('Service non trouvé');
-
-      const dayOfWeek = isoDayOfWeek(date);
-      const { data: hours } = await this.supabase.client
-        .from('opening_hours')
-        .select('*')
-        .eq('day_of_week', dayOfWeek)
-        .single();
-
-      if (!hours || hours.is_closed) return [];
-
-      const allSlots = this.generateTimeSlots(
-        hours.start_time,
-        hours.end_time,
-        service.duration_minutes
-      );
-
-      // RPC et non lecture directe : la table `bookings` n'est plus lisible
-      // publiquement, cette fonction ne renvoie que des intervalles horaires.
-      const { data: bookings } = await this.supabase.client
-        .rpc('get_booked_intervals', { p_date: date });
-
-      const { data: blocked } = await this.supabase.client
-        .from('blocked_slots')
-        .select('start_time, end_time')
-        .eq('date', date);
-
-      const availableSlots = allSlots.map(slot => ({
-        time: slot,
-        available: !this.isSlotOccupied(slot, bookings || [], blocked || [], service.duration_minutes),
-        isPending: false
-      }));
-
-      this.availableSlotsCache.set(cacheKey, {
-        slots: availableSlots,
-        timestamp: Date.now()
-      });
-
-      return this.filterPastSlots(date, availableSlots);
-
-    } catch (error) {
-      console.error('Erreur lors de la récupération des créneaux:', error);
-      return [];
-    }
-  }
-
   /**
    * Disponibilité de plusieurs dates en une passe, pour l'écran de choix de la
    * date. Tout est récupéré en 4 requêtes quelle que soit la longueur de la
@@ -296,29 +273,32 @@ export class BookingService {
         const hours = hoursByDay.get(dayOfWeek);
 
         if (!hours || hours.is_closed) {
-          result.set(date, { available: false, reason: 'closed', slots: 0 });
+          result.set(date, { available: false, reason: 'closed', slots: [] });
           continue;
         }
 
         const booked = bookedByDate.get(date) ?? [];
         const blocked = blockedByDate.get(date) ?? [];
 
-        const slots = this.generateTimeSlots(hours.start_time, hours.end_time, duration)
-          .map(time => ({
+        // Les créneaux déjà passés du jour même n'ont plus lieu d'être proposés
+        const slots = this.filterPastSlots(
+          date,
+          this.generateTimeSlots(hours.start_time, hours.end_time, duration).map(time => ({
             time,
             available: !this.isSlotOccupied(time, booked, blocked, duration)
-          }));
+          }))
+        );
 
-        const remaining = this.filterPastSlots(date, slots).filter(s => s.available).length;
+        const remaining = slots.filter(s => s.available).length;
 
         if (remaining > 0) {
-          result.set(date, { available: true, reason: null, slots: remaining });
+          result.set(date, { available: true, reason: null, slots });
         } else {
           // On distingue « bloqué par le salon » de « toutes les places prises »
           result.set(date, {
             available: false,
             reason: blocked.length ? 'blocked' : 'full',
-            slots: 0
+            slots
           });
         }
       }
@@ -464,7 +444,6 @@ export class BookingService {
         return { success: false, error: this.translateBookingError(error) };
       }
 
-      this.invalidateCache(booking.booking_date, booking.service_id);
       // La RPC ne renvoie que l'identifiant : c'est la seule donnée que le
       // parcours de confirmation utilise.
       return { success: true, booking: { id: data as string } as Booking };
@@ -555,11 +534,6 @@ export class BookingService {
     return { success: true };
   }
 
-  /** Force la relecture des créneaux au prochain appel. */
-  clearSlotsCache(): void {
-    this.availableSlotsCache.clear();
-  }
-
   // ==================== GESTION DE L'ÉTAT ====================
 
   updateBookingState(updates: Partial<BookingState>): void {
@@ -579,16 +553,5 @@ export class BookingService {
 
   getCurrentState(): BookingState {
     return this.bookingStateSubject.value;
-  }
-
-  // ==================== CACHE ====================
-
-  private invalidateCache(date: string, serviceId: string): void {
-    const cacheKey = `${date}-${serviceId}`;
-    this.availableSlotsCache.delete(cacheKey);
-  }
-
-  clearCache(): void {
-    this.availableSlotsCache.clear();
   }
 }

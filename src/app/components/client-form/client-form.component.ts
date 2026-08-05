@@ -245,7 +245,8 @@ export class ClientFormComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/time']);
+    // Date et heure sont désormais choisies sur le même écran
+    this.router.navigate(['/date']);
   }
 
   goToAuth(): void {

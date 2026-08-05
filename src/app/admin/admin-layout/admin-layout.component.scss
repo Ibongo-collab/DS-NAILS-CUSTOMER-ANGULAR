@@ -41,15 +41,32 @@
   strong { font-weight: 600; }
 }
 
-.admin-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+/* Huit onglets ne tiennent pas sur la largeur d'un téléphone. Repliés sur
+   trois lignes, ils repoussaient le contenu vers le bas et se lisaient mal :
+   ils défilent désormais sur une seule ligne. Le rail porte le trait de
+   séparation, qui reste ainsi sur toute la largeur quel que soit le
+   défilement. */
+.admin-tabs-rail {
+  position: relative;
   border-bottom: 1px solid rgba(105, 0, 90, 0.12);
   margin-bottom: 1.75rem;
 }
 
+.admin-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  overflow-x: auto;
+  /* Sur ordinateur les onglets tiennent tous : rien ne défile et cette barre
+     n'apparaît jamais. Sur mobile elle n'apporterait rien au doigt. */
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
 .admin-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: 0.7rem 1.1rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -68,8 +85,21 @@
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 760px) {
   .admin-shell { padding: 1.5rem 1rem 2.5rem; }
   .admin-title { font-size: 1.5rem; }
   .admin-tab { padding: 0.6rem 0.8rem; font-size: 0.7rem; }
+
+  /* Dégradé en bout de rail : signale qu'il reste des onglets à droite.
+     Transparent au clic, sinon il masquerait le dernier onglet visible. */
+  .admin-tabs-rail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 1px;
+    width: 2rem;
+    pointer-events: none;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff 85%);
+  }
 }

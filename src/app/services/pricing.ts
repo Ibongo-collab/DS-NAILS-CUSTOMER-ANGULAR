@@ -26,7 +26,11 @@ export function bestPromotion(
 ): Promotion | null {
   const applicable = promotions.filter(promotion => {
     if (promotion.active === false) return false;
-    if (promotion.service_id !== null && promotion.service_id !== serviceId) return false;
+
+    // Aucune prestation rattachée : la promotion vaut pour toutes
+    const cibles = promotion.service_ids ?? [];
+    if (cibles.length > 0 && !cibles.includes(serviceId)) return false;
+
     if (onDate && (onDate < promotion.starts_on || onDate > promotion.ends_on)) return false;
     return true;
   });

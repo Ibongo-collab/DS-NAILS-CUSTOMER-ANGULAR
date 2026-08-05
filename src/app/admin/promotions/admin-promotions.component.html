@@ -7,8 +7,12 @@
 
 <div class="panel">
   <div class="panel-head">
-    <h2>Créer une promotion</h2>
+    <h2>{{ formTitle }}</h2>
+    @if (editingId) {
+      <button class="btn-sm" (click)="cancelEdit()">Abandonner la modification</button>
+    }
   </div>
+
   <div class="panel-body">
     <div class="field-grid promo-form">
       <div class="field">
@@ -20,7 +24,7 @@
           placeholder="Offre de rentrée">
       </div>
 
-      <div class="field field-narrow">
+      <div class="field">
         <label for="promo-percent">Remise (%)</label>
         <input
           id="promo-percent"
@@ -34,11 +38,9 @@
 
       <div class="field">
         <label for="promo-scope">S'applique à</label>
-        <select id="promo-scope" [(ngModel)]="draft.service_id">
-          <option value="">Toutes les prestations</option>
-          @for (service of services; track service.id) {
-            <option [value]="service.id">{{ service.name }}</option>
-          }
+        <select id="promo-scope" [(ngModel)]="draft.scope" (ngModelChange)="onScopeChange()">
+          <option value="all">Toutes les prestations</option>
+          <option value="some">Certaines prestations…</option>
         </select>
       </div>
 
@@ -51,10 +53,54 @@
         <label for="promo-end">Fin</label>
         <input id="promo-end" type="date" [(ngModel)]="draft.ends_on">
       </div>
+    </div>
 
-      <button class="btn-sm btn-primary-sm" [disabled]="!canCreate || creating" (click)="create()">
-        {{ creating ? 'Ajout…' : 'Créer' }}
+    <!-- Choix multiple, seulement quand la portée le demande -->
+    @if (draft.scope === 'some') {
+      <div class="picker">
+        <div class="picker-head">
+          <span class="picker-count">
+            {{ draft.service_ids.length }} prestation(s) sélectionnée(s)
+          </span>
+          <input
+            class="picker-search"
+            type="text"
+            [(ngModel)]="serviceSearch"
+            placeholder="Rechercher une prestation">
+          <button class="btn-sm" (click)="selectAllVisible()">Tout cocher</button>
+          <button class="btn-sm" [disabled]="!draft.service_ids.length" (click)="clearPicks()">
+            Tout décocher
+          </button>
+        </div>
+
+        <ul class="picker-list">
+          @for (service of pickerServices; track service.id) {
+            <li class="picker-item" [class.picked]="isPicked(service.id)">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="isPicked(service.id)"
+                  (change)="togglePick(service.id)">
+                <span>{{ service.name }}</span>
+              </label>
+              @if (!service.active) {
+                <span class="picker-note">masquée</span>
+              }
+            </li>
+          } @empty {
+            <li class="picker-empty">Aucune prestation ne correspond.</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="promo-actions">
+      <button class="btn-sm btn-primary-sm" [disabled]="!canSave || saving" (click)="save()">
+        {{ saving ? 'Enregistrement…' : (editingId ? 'Enregistrer les modifications' : 'Créer') }}
       </button>
+      @if (editingId) {
+        <button class="btn-sm" (click)="cancelEdit()">Annuler</button>
+      }
     </div>
 
     <p class="promo-hint">
@@ -94,68 +140,39 @@
         </thead>
         <tbody>
           @for (promotion of promotions; track promotion.id) {
-            @if (editingId === promotion.id) {
-              <tr class="editing">
-                <td><input type="text" [(ngModel)]="edit.name"></td>
-                <td>
-                  <input type="number" min="1" max="100" step="1" [(ngModel)]="edit.discount_percent">
-                </td>
-                <td>
-                  <select [(ngModel)]="edit.service_id">
-                    <option value="">Toutes les prestations</option>
-                    @for (service of services; track service.id) {
-                      <option [value]="service.id">{{ service.name }}</option>
-                    }
-                  </select>
-                </td>
-                <td class="cell-dates">
-                  <input type="date" [(ngModel)]="edit.starts_on">
-                  <input type="date" [(ngModel)]="edit.ends_on">
-                </td>
-                <td>—</td>
-                <td class="cell-actions">
-                  <button
-                    class="btn-sm btn-primary-sm"
-                    [disabled]="!canSaveEdit || busyId === promotion.id"
-                    (click)="saveEdit(promotion)">
-                    Enregistrer
-                  </button>
-                  <button class="btn-sm" (click)="cancelEdit()">Annuler</button>
-                </td>
-              </tr>
-            } @else {
-              <tr [class.inactive]="state(promotion) !== 'running'">
-                <td class="cell-strong">{{ promotion.name }}</td>
-                <td class="cell-strong">−{{ formatPercent(promotion.discount_percent) }}</td>
-                <td>{{ scopeLabel(promotion) }}</td>
-                <td>{{ formatDate(promotion.starts_on) }} → {{ formatDate(promotion.ends_on) }}</td>
-                <td>
-                  <span class="badge" [class]="'badge promo-' + state(promotion)">
-                    {{ stateLabel(promotion) }}
-                  </span>
-                </td>
-                <td class="cell-actions">
-                  <button
-                    class="btn-sm"
-                    [disabled]="busyId === promotion.id"
-                    (click)="startEdit(promotion)">
-                    Modifier
-                  </button>
-                  <button
-                    class="btn-sm"
-                    [disabled]="busyId === promotion.id"
-                    (click)="toggleActive(promotion)">
-                    {{ promotion.active ? 'Désactiver' : 'Activer' }}
-                  </button>
-                  <button
-                    class="btn-sm btn-danger"
-                    [disabled]="busyId === promotion.id"
-                    (click)="remove(promotion)">
-                    Supprimer
-                  </button>
-                </td>
-              </tr>
-            }
+            <tr
+              [class.inactive]="state(promotion) !== 'running'"
+              [class.editing]="editingId === promotion.id">
+              <td class="cell-strong">{{ promotion.name }}</td>
+              <td class="cell-strong">−{{ formatPercent(promotion.discount_percent) }}</td>
+              <td [attr.title]="scopeDetail(promotion) || null">{{ scopeLabel(promotion) }}</td>
+              <td>{{ formatDate(promotion.starts_on) }} → {{ formatDate(promotion.ends_on) }}</td>
+              <td>
+                <span class="badge" [class]="'badge promo-' + state(promotion)">
+                  {{ stateLabel(promotion) }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <button
+                  class="btn-sm"
+                  [disabled]="busyId === promotion.id"
+                  (click)="startEdit(promotion)">
+                  Modifier
+                </button>
+                <button
+                  class="btn-sm"
+                  [disabled]="busyId === promotion.id"
+                  (click)="toggleActive(promotion)">
+                  {{ promotion.active ? 'Désactiver' : 'Activer' }}
+                </button>
+                <button
+                  class="btn-sm btn-danger"
+                  [disabled]="busyId === promotion.id"
+                  (click)="remove(promotion)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
           } @empty {
             <tr>
               <td colspan="6" class="state">Aucune promotion enregistrée.</td>

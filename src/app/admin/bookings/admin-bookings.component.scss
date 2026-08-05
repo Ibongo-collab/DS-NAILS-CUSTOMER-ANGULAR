@@ -9,6 +9,24 @@
   white-space: nowrap;
 }
 
+/* Les montants s'alignent à droite : c'est ainsi qu'on compare des chiffres
+   d'une ligne à l'autre. */
+.cell-amount {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #69005A;
+}
+
+/* Faute de tarif figé, c'est le prix actuel de la prestation qui s'affiche —
+   une approximation, pas ce qui a été convenu. Le pointillé le signale. */
+.amount-estimated {
+  font-weight: 500;
+  color: #8A6A85;
+  border-bottom: 1px dotted #C0A8BC;
+  cursor: help;
+}
+
 /* Bouton d'effacement de la date.
    Placé à côté du champ et non par-dessus : les navigateurs y logent déjà
    leur propre icône de calendrier, à un emplacement qui varie de l'un à
@@ -155,37 +173,6 @@
 }
 
 // --- Confirmation de clôture ---
-
-.modal-recap {
-  padding: 0.9rem 1rem;
-  border-radius: 10px;
-  background: #FCF4FB;
-  margin-bottom: 1.15rem;
-}
-
-.recap-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.3rem 0;
-  font-size: 0.87rem;
-}
-
-.recap-label {
-  color: #7A3A70;
-  flex-shrink: 0;
-}
-
-.recap-value {
-  color: #4A2344;
-  text-align: right;
-  word-break: break-word;
-
-  &.strong {
-    font-weight: 700;
-    color: #69005A;
-  }
-}
 
 /* Ambre : une conséquence à peser, pas une erreur */
 

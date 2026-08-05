@@ -1,12 +1,110 @@
-/* Le champ Remise n'accueille que deux ou trois caractères : la grille lui
-   laisse sinon la même largeur qu'au nom de la promotion. */
-.promo-form .field-narrow {
-  max-width: 130px;
+/* Tous les champs suivent la grille, y compris « Remise » qui n'accueille que
+   deux ou trois caractères : le brider créait une colonne plus courte que les
+   autres, et une rangée bancale dès que la grille repasse sur deux colonnes. */
+
+.promo-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+
+  .btn-sm { margin-left: 0; }
 }
 
-.promo-form > .btn-sm {
-  height: var(--control-height);
-  margin-left: 0;
+// --- Choix multiple de prestations ---
+
+.picker {
+  margin-top: 1.1rem;
+  border: 1px solid rgba(105, 0, 90, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  background: #FCF4FB;
+  border-bottom: 1px solid rgba(105, 0, 90, 0.1);
+}
+
+.picker-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #69005A;
+  margin-right: auto;
+}
+
+.picker-search {
+  flex: 1 1 12rem;
+  min-width: 9rem;
+}
+
+.picker-head .btn-sm { margin-left: 0; }
+
+/* Hauteur bornée : au-delà d'une dizaine de prestations, la liste repousserait
+   le bouton d'enregistrement hors de l'écran. */
+.picker-list {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 0.35rem 0;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.85rem;
+
+  &:hover { background: #FDF8FC; }
+
+  &.picked { background: #FCF4FB; }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    /* Les étiquettes de l'administration sont en majuscules ; ici c'est un nom
+       de prestation, il doit se lire tel qu'il a été saisi. */
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #4A2344;
+    cursor: pointer;
+  }
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #69005A;
+    cursor: pointer;
+  }
+}
+
+.picker-note {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #8A6A85;
+}
+
+.picker-empty {
+  padding: 1rem 0.85rem;
+  font-size: 0.85rem;
+  color: #8A6A85;
+  text-align: center;
+}
+
+/* Ligne en cours de modification : le formulaire du haut la reprend, il faut
+   pouvoir la retrouver d'un coup d'œil en revenant au tableau. */
+tr.editing td {
+  background: #FCF4FB;
+  box-shadow: inset 2px 0 0 #F3B1F1;
 }
 
 .promo-hint {
@@ -27,16 +125,6 @@
    doit pas attirer l'œil autant que celles en cours. */
 tr.inactive td {
   opacity: 0.6;
-}
-
-tr.editing td {
-  background: #FDF6FC;
-}
-
-.cell-dates {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
 }
 
 .promo-running   { background: #E1F5E7; color: #1F6B3A; }

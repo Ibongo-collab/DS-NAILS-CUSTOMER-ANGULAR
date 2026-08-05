@@ -471,29 +471,66 @@ export class AdminService {
   async getPromotions(): Promise<Promotion[]> {
     const { data, error } = await this.supabase.client
       .from('promotions')
-      .select('*')
+      // La table de liaison est imbriquée : une requête suffit pour connaître
+      // la portée de chaque promotion.
+      .select('*, promotion_services(service_id)')
       .order('starts_on', { ascending: false });
 
     if (error || !data) {
       console.error('Erreur lors de la récupération des promotions:', error);
       return [];
     }
-    return data as Promotion[];
+
+    return (data as any[]).map(row => ({
+      ...row,
+      service_ids: (row.promotion_services ?? []).map((lien: any) => lien.service_id)
+    })) as Promotion[];
   }
 
-  async createPromotion(promotion: Partial<Promotion>): Promise<AdminResult> {
-    const { error } = await this.supabase.client
-      .from('promotions')
-      .insert(promotion);
+  /**
+   * Crée ou modifie une promotion, portée comprise.
+   *
+   * Passe par une RPC : enregistrer la promotion puis ses prestations en deux
+   * appels laisserait, si le second échoue, une promotion dont la portée est
+   * fausse — donc des prix faux affichés aux clientes.
+   *
+   * @param serviceIds liste vide = la promotion s'applique à toutes les prestations
+   */
+  async savePromotion(
+    promotion: {
+      name: string;
+      discount_percent: number;
+      starts_on: string;
+      ends_on: string;
+      service_ids: string[];
+    },
+    id?: string
+  ): Promise<AdminResult> {
+    const { error } = await this.supabase.client.rpc('save_promotion', {
+      p_name: promotion.name,
+      p_discount_percent: promotion.discount_percent,
+      p_starts_on: promotion.starts_on,
+      p_ends_on: promotion.ends_on,
+      p_service_ids: promotion.service_ids.length ? promotion.service_ids : null,
+      p_id: id ?? null
+    });
 
-    if (error) return this.fail(error, this.promotionError(error));
+    if (error) {
+      // Les messages levés par la fonction sont déjà rédigés pour l'écran
+      const code = (error as { code?: string }).code;
+      if (code === 'P0001' || code === 'P0002' || code === 'P0003') {
+        return { success: false, error: error.message };
+      }
+      return this.fail(error, this.promotionError(error));
+    }
     return { success: true };
   }
 
-  async updatePromotion(id: string, changes: Partial<Promotion>): Promise<AdminResult> {
+  /** Mise en pause ou reprise, sans toucher à la portée. */
+  async setPromotionActive(id: string, active: boolean): Promise<AdminResult> {
     const { data, error } = await this.supabase.client
       .from('promotions')
-      .update(changes)
+      .update({ active })
       .eq('id', id)
       .select('id');
 

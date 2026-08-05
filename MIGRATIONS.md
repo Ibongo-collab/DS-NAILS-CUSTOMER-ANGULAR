@@ -28,6 +28,8 @@ version plus ancienne, et une fonctionnalité disparaît en silence.
 | 14 | `supabase-promotions.sql` | Promotions et prix remisé · **`create_booking` v3** |
 | 15 | `supabase-manual-booking.sql` | Saisie manuelle d'une prestation réalisée |
 | 16 | `supabase-protect-bookings.sql` | Interdit toute suppression de réservation |
+| 17 | `supabase-no-overlap.sql` | Contrainte d'exclusion : deux rendez-vous ne peuvent plus se chevaucher · **`create_booking` v4** |
+| 18 | `supabase-promotion-services.sql` | Une promotion peut viser plusieurs prestations (table de liaison) |
 
 ## Fichier obsolète
 
@@ -57,6 +59,10 @@ WHERE tgrelid = 'public.bookings'::regclass AND tgname = 'bookings_no_delete';
 -- create_booking tient-elle compte des remises ? (nº 14)
 SELECT prosrc LIKE '%effective_price%' AS remises_prises_en_compte
 FROM pg_proc WHERE proname = 'create_booking';
+
+-- Deux rendez-vous simultanés sont-ils impossibles ? (nº 17)
+SELECT conname FROM pg_constraint
+WHERE conrelid = 'public.bookings'::regclass AND conname = 'bookings_no_overlap';
 ```
 
 Rejouer un script déjà passé est sans danger — sauf le fichier obsolète

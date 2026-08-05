@@ -20,6 +20,11 @@ export const ADMIN_ROUTES: Routes = [
           import('./bookings/admin-bookings.component').then(m => m.AdminBookingsComponent)
       },
       {
+        path: 'planning',
+        loadComponent: () =>
+          import('./planning/admin-planning.component').then(m => m.AdminPlanningComponent)
+      },
+      {
         path: 'statistiques',
         loadComponent: () =>
           import('./stats/admin-stats.component').then(m => m.AdminStatsComponent)
