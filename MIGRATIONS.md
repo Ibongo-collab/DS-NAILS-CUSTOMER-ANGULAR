@@ -30,6 +30,7 @@ version plus ancienne, et une fonctionnalité disparaît en silence.
 | 16 | `supabase-protect-bookings.sql` | Interdit toute suppression de réservation |
 | 17 | `supabase-no-overlap.sql` | Contrainte d'exclusion : deux rendez-vous ne peuvent plus se chevaucher · **`create_booking` v4** |
 | 18 | `supabase-promotion-services.sql` | Une promotion peut viser plusieurs prestations (table de liaison) |
+| 19 | `supabase-super-admin.sql` | Rôle `super_admin` · suppression de réservation, tracée dans `deleted_bookings` |
 
 ## Fichier obsolète
 
@@ -63,6 +64,9 @@ FROM pg_proc WHERE proname = 'create_booking';
 -- Deux rendez-vous simultanés sont-ils impossibles ? (nº 17)
 SELECT conname FROM pg_constraint
 WHERE conrelid = 'public.bookings'::regclass AND conname = 'bookings_no_overlap';
+
+-- Qui est administrateur, qui est super administrateur ? (nº 19)
+SELECT email, role FROM public.profiles WHERE role <> 'client' ORDER BY role;
 ```
 
 Rejouer un script déjà passé est sans danger — sauf le fichier obsolète

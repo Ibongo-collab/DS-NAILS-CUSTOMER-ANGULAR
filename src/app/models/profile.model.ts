@@ -1,4 +1,9 @@
-export type UserRole = 'client' | 'admin';
+/**
+ * `super_admin` est un accès technique : il peut supprimer une réservation,
+ * ce qu'aucun autre rôle ne peut faire, mais les chiffres d'affaires lui sont
+ * masqués. Il reste administrateur pour tout le reste.
+ */
+export type UserRole = 'client' | 'admin' | 'super_admin';
 
 export type Gender = 'homme' | 'femme';
 

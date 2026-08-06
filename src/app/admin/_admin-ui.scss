@@ -179,8 +179,11 @@
     color: #7A3A70;
   }
 
-  input,
-  select {
+  /* `app-phone-input` est exclu : ce composant apporte son propre habillage
+     — drapeau, indicatif, séparateur, liste déroulante des pays. Ces règles
+     génériques, plus spécifiques que les siennes, le décomposeraient. */
+  input:not(app-phone-input *),
+  select:not(app-phone-input *) {
     padding: 0.6rem 0.7rem;
     border: 1px solid rgba(105, 0, 90, 0.18);
     border-radius: 8px;
@@ -233,11 +236,17 @@
   .field-grid {
     --control-height: 40px;
 
-    input:not([type='checkbox']):not([type='radio']):not([type='file']),
-    select {
+    input:not([type='checkbox']):not([type='radio']):not([type='file']):not(app-phone-input *),
+    select:not(app-phone-input *) {
       height: var(--control-height);
       padding-top: 0;
       padding-bottom: 0;
+    }
+
+    /* Le champ téléphone se cale sur la même hauteur que ses voisins, mais
+       depuis l'extérieur : son intérieur reste sa propre affaire. */
+    app-phone-input .phone-field {
+      height: var(--control-height);
     }
   }
 
@@ -248,6 +257,42 @@
        ligne de base que les champs, qui en ont une. */
     flex-shrink: 0;
   }
+
+  // --- Pagination d'un tableau ---
+  // Partagée par la liste des réservations et celle des clients.
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(105, 0, 90, 0.08);
+  }
+
+  .pagination-info {
+    font-size: 0.8rem;
+    color: #8A6A85;
+    /* Chiffres à chasse fixe : le compteur ne doit pas sautiller d'une page
+       à l'autre quand le nombre de caractères change. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pagination-page {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #69005A;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .pagination .btn-sm { margin-left: 0; }
 
   // --- Récapitulatif d'une fenêtre modale ---
   // Partagé par la clôture d'une réservation et le détail du planning.

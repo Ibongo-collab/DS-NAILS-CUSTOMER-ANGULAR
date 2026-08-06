@@ -1,5 +1,8 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { PhoneInputComponent } from '../../components/shared/phone-input/phone-input.component';
 import { AdminService, AdminStats } from '../admin.service';
 import { Booking, BookingStatus, Promotion, Service } from '../../models/booking.model';
 import { applyDiscount, bestPromotion } from '../../services/pricing';
@@ -22,7 +25,7 @@ interface ManualEntry {
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PhoneInputComponent],
   templateUrl: './admin-bookings.component.html',
   styleUrls: ['./admin-bookings.component.scss']
 })
@@ -42,6 +45,16 @@ export class AdminBookingsComponent implements OnInit {
   /** Clôturer une réservation la fait entrer dans les comptes : on fait confirmer */
   bookingToComplete: Booking | null = null;
 
+  /** Seul le super administrateur peut supprimer une réservation. */
+  isSuperAdmin = false;
+
+  /** Réservation dont la suppression est en cours de confirmation */
+  bookingToDelete: Booking | null = null;
+  deleteReason = '';
+  deleting = false;
+
+  private destroyRef = inject(DestroyRef);
+
   readonly statusOptions: { value: StatusFilter; label: string }[] = [
     { value: 'all', label: 'Tous les statuts' },
     { value: 'pending', label: 'En attente' },
@@ -60,9 +73,20 @@ export class AdminBookingsComponent implements OnInit {
   private promotions: Promotion[] = [];
   manual: ManualEntry = this.emptyEntry();
 
-  constructor(private adminService: AdminService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private adminService: AdminService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
+    this.authService.isSuperAdmin$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSuperAdmin => {
+        this.isSuperAdmin = isSuperAdmin === true;
+        this.cdr.detectChanges();
+      });
+
     this.load();
   }
 
@@ -90,6 +114,42 @@ export class AdminBookingsComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // --- Pagination ---
+
+  /** Cinq lignes par page : la liste grossit sans fin avec le temps. */
+  readonly pageSize = 5;
+  page = 1;
+
+  get pageCount(): number {
+    return Math.max(1, Math.ceil(this.filteredBookings.length / this.pageSize));
+  }
+
+  get pagedBookings(): Booking[] {
+    // Un filtre peut réduire la liste sous la page courante : on la ramène
+    // dans les bornes sans toucher au champ, qui reste l'intention de l'admin
+    const page = Math.min(this.page, this.pageCount);
+    const start = (page - 1) * this.pageSize;
+    return this.filteredBookings.slice(start, start + this.pageSize);
+  }
+
+  get rangeStart(): number {
+    if (!this.filteredBookings.length) return 0;
+    return (Math.min(this.page, this.pageCount) - 1) * this.pageSize + 1;
+  }
+
+  get rangeEnd(): number {
+    return Math.min(this.rangeStart + this.pageSize - 1, this.filteredBookings.length);
+  }
+
+  goToPage(page: number): void {
+    this.page = Math.min(Math.max(page, 1), this.pageCount);
+  }
+
+  /** Tout changement de filtre ramène à la première page. */
+  onFilterChange(): void {
+    this.page = 1;
+  }
+
   get filteredBookings(): Booking[] {
     const term = this.search.trim().toLowerCase();
     return this.bookings.filter(booking => {
@@ -106,12 +166,14 @@ export class AdminBookingsComponent implements OnInit {
 
   clearDateFilter(): void {
     this.dateFilter = '';
+    this.onFilterChange();
   }
 
   resetFilters(): void {
     this.statusFilter = 'all';
     this.dateFilter = '';
     this.search = '';
+    this.onFilterChange();
   }
 
   canConfirm(booking: Booking): boolean {
@@ -191,6 +253,43 @@ export class AdminBookingsComponent implements OnInit {
 
     this.bookingToComplete = null;
     await this.setStatus(booking, 'completed');
+  }
+
+  // --- Suppression définitive (super administrateur) ---
+
+  askDelete(booking: Booking): void {
+    this.bookingToDelete = booking;
+    this.deleteReason = '';
+    this.error = '';
+    this.cdr.detectChanges();
+  }
+
+  dismissDelete(): void {
+    this.bookingToDelete = null;
+    this.deleteReason = '';
+    this.cdr.detectChanges();
+  }
+
+  async confirmDelete(): Promise<void> {
+    const booking = this.bookingToDelete;
+    if (!booking?.id) return;
+
+    this.deleting = true;
+    this.error = '';
+    this.cdr.detectChanges();
+
+    const result = await this.adminService.deleteBooking(booking.id, this.deleteReason);
+
+    this.deleting = false;
+    this.bookingToDelete = null;
+    this.deleteReason = '';
+
+    if (!result.success) {
+      this.error = result.error || 'La suppression a échoué.';
+      this.cdr.detectChanges();
+      return;
+    }
+    await this.load(false);
   }
 
   /**
@@ -327,6 +426,14 @@ export class AdminBookingsComponent implements OnInit {
   private get manualProblem(): string {
     if (!this.manual.service_id) return 'Choisissez la prestation réalisée.';
     if (!this.manual.client_name.trim()) return 'Indiquez le nom de la cliente ou du client.';
+
+    // Le téléphone est la clé de rapprochement des visites : sans lui, la
+    // prestation compte dans le chiffre d'affaires mais reste absente du
+    // classement des clientes fidèles, faute de savoir à qui la rattacher.
+    const chiffres = this.manual.client_phone.replace(/\D/g, '');
+    if (!chiffres) return 'Le téléphone est obligatoire pour rattacher la prestation à une cliente.';
+    if (chiffres.length < 6) return 'Ce numéro de téléphone paraît incomplet.';
+
     if (!this.manual.booking_date) return 'Indiquez la date de la prestation.';
     if (this.manual.booking_date > this.todayIso()) {
       return 'Une prestation réalisée ne peut pas porter une date future.';

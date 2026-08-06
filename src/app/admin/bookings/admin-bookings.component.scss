@@ -72,6 +72,13 @@
   color: #8A6A85;
 }
 
+/* Deux contrôles dans une seule case — sélecteur de pays et numéro — ne
+   tiennent pas dans la largeur prévue pour un champ simple : le numéro s'y
+   retrouvait tronqué. */
+.manual-form .field-phone {
+  grid-column: span 2;
+}
+
 .optional {
   font-weight: 400;
   text-transform: none;
@@ -176,3 +183,20 @@
 
 /* Ambre : une conséquence à peser, pas une erreur */
 
+
+/* Suppression définitive : réservée au super administrateur. Distinguée de
+   « Annuler », qui est réversible et sans effet comptable. */
+.btn-delete {
+  color: #fff;
+  background: #A03030;
+  border-color: #A03030;
+
+  &:hover:not(:disabled) {
+    background: #8A2626;
+    border-color: #8A2626;
+  }
+}
+
+.delete-reason {
+  margin-bottom: 1.2rem;
+}

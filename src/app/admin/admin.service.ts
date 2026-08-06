@@ -424,6 +424,30 @@ export class AdminService {
     return { success: true };
   }
 
+  /**
+   * Supprime définitivement une réservation. **Super administrateur seulement.**
+   *
+   * Passe par une RPC : la table refuse toute suppression directe, y compris
+   * en cascade (cf. supabase-protect-bookings.sql). La fonction archive la
+   * ligne avec son auteur avant de l'effacer — une suppression doit rester
+   * explicable si un écart comptable apparaît plus tard.
+   */
+  async deleteBooking(id: string, reason?: string): Promise<AdminResult> {
+    const { error } = await this.supabase.client.rpc('delete_booking', {
+      p_id: id,
+      p_reason: reason || null
+    });
+
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'P0001' || code === 'P0002' || code === 'P0006') {
+        return { success: false, error: error.message };
+      }
+      return this.fail(error, 'Impossible de supprimer la réservation.');
+    }
+    return { success: true };
+  }
+
   // ==================== SAISIE MANUELLE ====================
 
   /**

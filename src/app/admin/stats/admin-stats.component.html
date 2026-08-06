@@ -5,19 +5,29 @@
   <!-- Chiffre du mois : le seul chiffre héros de la vue -->
   <div class="panel hero-panel">
     <div class="panel-body hero-body">
-      <div>
-        <p class="hero-label">Chiffre d'affaires du mois en cours</p>
-        <p class="hero-figure">{{ money(stats.revenueCurrentMonth) }}</p>
-        @if (monthDelta !== null) {
-          <p class="hero-delta" [class.up]="monthDelta >= 0" [class.down]="monthDelta < 0">
-            <span aria-hidden="true">{{ monthDelta >= 0 ? '▲' : '▼' }}</span>
-            {{ signedPercent(monthDelta) }} par rapport au mois précédent
-            ({{ money(stats.revenuePreviousMonth) }})
+      @if (isSuperAdmin) {
+        <!-- Compte technique : les montants ne lui sont pas montrés -->
+        <div>
+          <p class="hero-label">Statistiques d'activité</p>
+          <p class="hero-restricted">
+            Les chiffres d'affaires ne sont pas accessibles depuis ce compte.
           </p>
-        } @else {
-          <p class="hero-delta muted">Pas de mois précédent pour comparer.</p>
-        }
-      </div>
+        </div>
+      } @else {
+        <div>
+          <p class="hero-label">Chiffre d'affaires du mois en cours</p>
+          <p class="hero-figure">{{ money(stats.revenueCurrentMonth) }}</p>
+          @if (monthDelta !== null) {
+            <p class="hero-delta" [class.up]="monthDelta >= 0" [class.down]="monthDelta < 0">
+              <span aria-hidden="true">{{ monthDelta >= 0 ? '▲' : '▼' }}</span>
+              {{ signedPercent(monthDelta) }} par rapport au mois précédent
+              ({{ money(stats.revenuePreviousMonth) }})
+            </p>
+          } @else {
+            <p class="hero-delta muted">Pas de mois précédent pour comparer.</p>
+          }
+        </div>
+      }
       <button class="btn-sm" [disabled]="refreshing" (click)="refresh()">
         {{ refreshing ? 'Actualisation…' : 'Actualiser' }}
       </button>
@@ -26,16 +36,18 @@
 
   <!-- Indicateurs -->
   <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-value">{{ money(stats.revenueTotal) }}</div>
-      <div class="stat-label">CA cumulé</div>
-      <p class="stat-note">Prestations terminées uniquement</p>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{ money(stats.averageBasket) }}</div>
-      <div class="stat-label">Panier moyen</div>
-      <p class="stat-note">CA cumulé ÷ {{ stats.completedCount }} prestation(s)</p>
-    </div>
+    @if (!isSuperAdmin) {
+      <div class="stat-card">
+        <div class="stat-value">{{ money(stats.revenueTotal) }}</div>
+        <div class="stat-label">CA cumulé</div>
+        <p class="stat-note">Prestations terminées uniquement</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ money(stats.averageBasket) }}</div>
+        <div class="stat-label">Panier moyen</div>
+        <p class="stat-note">CA cumulé ÷ {{ stats.completedCount }} prestation(s)</p>
+      </div>
+    }
     <div class="stat-card">
       <div class="stat-value">{{ stats.completedCount }}</div>
       <div class="stat-label">Réservations terminées</div>
@@ -92,14 +104,17 @@
 
   <!-- Une seule rangée de filtres, au-dessus de tout ce qu'elle cadre -->
   <div class="filter-row">
-    <div class="field inline">
-      <label for="months">Historique du chiffre d'affaires</label>
-      <select id="months" [(ngModel)]="monthsRange" (ngModelChange)="onRangeChange()">
-        @for (option of monthOptions; track option.value) {
-          <option [ngValue]="option.value">{{ option.label }}</option>
-        }
-      </select>
-    </div>
+    @if (!isSuperAdmin) {
+      <!-- Ce filtre ne cadre que le graphique du CA, masqué avec lui -->
+      <div class="field inline">
+        <label for="months">Historique du chiffre d'affaires</label>
+        <select id="months" [(ngModel)]="monthsRange" (ngModelChange)="onRangeChange()">
+          @for (option of monthOptions; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+    }
     <div class="field inline">
       <label for="days">Courbe des réservations</label>
       <select id="days" [(ngModel)]="daysRange" (ngModelChange)="onRangeChange()">
@@ -111,19 +126,21 @@
   </div>
 
   <!-- CA par mois -->
-  <div class="panel">
-    <div class="panel-head">
-      <h2>Chiffre d'affaires par mois</h2>
+  @if (!isSuperAdmin) {
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Chiffre d'affaires par mois</h2>
+      </div>
+      <div class="panel-body">
+        <app-bar-chart
+          [points]="stats.revenueByMonth"
+          [formatter]="formatAmount"
+          categoryHeader="Mois"
+          valueHeader="Chiffre d'affaires"
+          emptyMessage="Aucune réservation terminée sur la période." />
+      </div>
     </div>
-    <div class="panel-body">
-      <app-bar-chart
-        [points]="stats.revenueByMonth"
-        [formatter]="formatAmount"
-        categoryHeader="Mois"
-        valueHeader="Chiffre d'affaires"
-        emptyMessage="Aucune réservation terminée sur la période." />
-    </div>
-  </div>
+  }
 
   <!-- Évolution des réservations -->
   <div class="panel">

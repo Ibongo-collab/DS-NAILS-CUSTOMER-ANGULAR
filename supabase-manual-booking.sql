@@ -53,6 +53,15 @@ BEGIN
             USING ERRCODE = 'P0003';
     END IF;
 
+    -- Le téléphone est la clé de rapprochement des visites d'une même
+    -- personne. Sans lui, la prestation entre bien dans le chiffre d'affaires
+    -- mais reste absente du classement des clientes fidèles : rien ne permet
+    -- de la rattacher à quelqu'un.
+    IF LENGTH(REGEXP_REPLACE(COALESCE(p_client_phone, ''), '\D', '', 'g')) < 6 THEN
+        RAISE EXCEPTION 'Le téléphone est obligatoire pour rattacher la prestation à une cliente.'
+            USING ERRCODE = 'P0003';
+    END IF;
+
     -- Une prestation réalisée ne peut pas l'être demain
     IF p_booking_date > CURRENT_DATE THEN
         RAISE EXCEPTION 'Une prestation ne peut pas être enregistrée comme réalisée à une date future.'
@@ -109,7 +118,26 @@ REVOKE EXECUTE ON FUNCTION public.create_manual_booking(UUID, TEXT, DATE, TIME, 
 GRANT EXECUTE ON FUNCTION public.create_manual_booking(UUID, TEXT, DATE, TIME, NUMERIC, TEXT, TEXT, TEXT) TO authenticated;
 
 -- ============================================
--- 2. VÉRIFICATIONS
+-- 2. RATTRAPAGE DES SAISIES SANS TÉLÉPHONE
+-- ============================================
+-- Le téléphone n'a pas toujours été exigé. Les prestations saisies sans lui
+-- comptent dans le chiffre d'affaires, mais restent absentes du classement
+-- des clientes fidèles : rien ne permet de les rattacher à quelqu'un.
+--
+-- Les repérer :
+--   SELECT id, booking_date, client_name, price_at_booking
+--   FROM public.bookings
+--   WHERE status = 'completed'
+--     AND COALESCE(TRIM(client_phone), '') = ''
+--     AND COALESCE(TRIM(client_email), '') = ''
+--   ORDER BY booking_date DESC;
+--
+-- Les corriger, une par une, avec le numéro retrouvé dans le cahier :
+--   UPDATE public.bookings SET client_phone = '+242 06 000 00 00'
+--   WHERE id = '...';
+
+-- ============================================
+-- 3. VÉRIFICATIONS
 -- ============================================
 -- Les saisies manuelles se reconnaissent à l'absence de compte rattaché et au
 -- statut « completed » dès la création :

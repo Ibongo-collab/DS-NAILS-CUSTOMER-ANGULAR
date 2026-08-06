@@ -34,9 +34,22 @@ export class AuthService {
   private profileSubject = new BehaviorSubject<Profile | null | undefined>(undefined);
   public profile$ = this.profileSubject.asObservable();
 
-  /** undefined tant que le profil n'est pas chargé — le guard doit attendre. */
+  /**
+   * undefined tant que le profil n'est pas chargé — le guard doit attendre.
+   *
+   * Un super administrateur est aussi administrateur : c'est le même socle de
+   * droits, augmenté. Le distinguer ici obligerait chaque écran à tester les
+   * deux rôles.
+   */
   public isAdmin$ = this.profile$.pipe(
-    map(profile => (profile === undefined ? undefined : profile?.role === 'admin'))
+    map(profile => (profile === undefined
+      ? undefined
+      : profile?.role === 'admin' || profile?.role === 'super_admin'))
+  );
+
+  /** Vrai pour le seul rôle habilité à supprimer une réservation. */
+  public isSuperAdmin$ = this.profile$.pipe(
+    map(profile => (profile === undefined ? undefined : profile?.role === 'super_admin'))
   );
 
   private profileLoadingFor: string | null = null;
@@ -172,7 +185,12 @@ export class AuthService {
   }
 
   get isAdmin(): boolean {
-    return this.profileSubject.value?.role === 'admin';
+    const role = this.profileSubject.value?.role;
+    return role === 'admin' || role === 'super_admin';
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.profileSubject.value?.role === 'super_admin';
   }
 
   get isAuthenticated(): boolean {

@@ -1,5 +1,7 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../admin.service';
 import { Booking } from '../../models/booking.model';
 import { ClientRow, ClientSignup } from '../admin.service';
@@ -33,6 +35,15 @@ const GENDER_COLORS = {
   styleUrls: ['./admin-stats.component.scss']
 })
 export class AdminStatsComponent implements OnInit {
+  /**
+   * Le super administrateur est un accès technique : les montants de chiffre
+   * d'affaires lui sont masqués. C'est un choix d'interface — les données
+   * restent lisibles par tout administrateur côté base.
+   */
+  isSuperAdmin = false;
+
+  private destroyRef = inject(DestroyRef);
+
   loading = true;
   /** Rechargement à chaud : le rendu précédent reste affiché, sans saut de mise en page */
   refreshing = false;
@@ -77,9 +88,20 @@ export class AdminStatsComponent implements OnInit {
   readonly formatAmount = (value: number): string => this.money(value);
   readonly formatCount = (value: number): string => `${Math.round(value)}`;
 
-  constructor(private adminService: AdminService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private adminService: AdminService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
+    this.authService.isSuperAdmin$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(isSuperAdmin => {
+        this.isSuperAdmin = isSuperAdmin === true;
+        this.cdr.detectChanges();
+      });
+
     this.load();
   }
 

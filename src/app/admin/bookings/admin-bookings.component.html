@@ -66,9 +66,12 @@
           <input id="m-time" type="time" [(ngModel)]="manual.start_time">
         </div>
 
-        <div class="field">
-          <label for="m-phone">Téléphone <span class="optional">(facultatif)</span></label>
-          <input id="m-phone" type="tel" [(ngModel)]="manual.client_phone">
+        <div class="field field-phone">
+          <label for="m-phone">Téléphone</label>
+          <app-phone-input
+            id="m-phone"
+            [(ngModel)]="manual.client_phone"
+            name="manualPhone" />
         </div>
 
         <div class="field">
@@ -129,6 +132,8 @@
         </button>
         <span class="manual-hint">
           Vérifiez que le montant correspond à ce qui a été réglé sur place.
+          Le téléphone sert à rattacher la prestation à une cliente dans les
+          statistiques.
         </span>
       </div>
     </div>
@@ -145,7 +150,7 @@
     <div class="filters">
       <div class="field">
         <label for="status">Statut</label>
-        <select id="status" [(ngModel)]="statusFilter">
+        <select id="status" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
           @for (option of statusOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
           }
@@ -154,7 +159,7 @@
       <div class="field">
         <label for="date">Date</label>
         <div class="date-field">
-          <input id="date" type="date" [(ngModel)]="dateFilter">
+          <input id="date" type="date" [(ngModel)]="dateFilter" (ngModelChange)="onFilterChange()">
           @if (dateFilter) {
             <button
               type="button"
@@ -169,7 +174,12 @@
       </div>
       <div class="field">
         <label for="search">Recherche</label>
-        <input id="search" type="text" placeholder="Nom, téléphone, email" [(ngModel)]="search">
+        <input
+          id="search"
+          type="text"
+          placeholder="Nom, téléphone, email"
+          [(ngModel)]="search"
+          (ngModelChange)="onFilterChange()">
       </div>
       <button class="btn-sm" (click)="resetFilters()">Réinitialiser</button>
     </div>
@@ -193,7 +203,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (booking of filteredBookings; track booking.id) {
+          @for (booking of pagedBookings; track booking.id) {
             <tr>
               <td class="cell-strong">{{ formatDate(booking.booking_date) }}</td>
               <td>{{ formatTime(booking.start_time) }} – {{ formatTime(booking.end_time) }}</td>
@@ -246,6 +256,15 @@
                     Annuler
                   </button>
                 }
+                @if (isSuperAdmin) {
+                  <button
+                    class="btn-sm btn-delete"
+                    [disabled]="busyId === booking.id"
+                    (click)="askDelete(booking)"
+                    title="Suppression définitive (super administrateur)">
+                    Supprimer
+                  </button>
+                }
               </td>
             </tr>
           } @empty {
@@ -256,6 +275,23 @@
         </tbody>
       </table>
     </div>
+
+    @if (filteredBookings.length) {
+      <div class="panel-body pagination">
+        <span class="pagination-info">
+          {{ rangeStart }}–{{ rangeEnd }} sur {{ filteredBookings.length }}
+        </span>
+        <div class="pagination-controls">
+          <button class="btn-sm" [disabled]="page <= 1" (click)="goToPage(page - 1)">
+            Précédent
+          </button>
+          <span class="pagination-page">Page {{ page }} / {{ pageCount }}</span>
+          <button class="btn-sm" [disabled]="page >= pageCount" (click)="goToPage(page + 1)">
+            Suivant
+          </button>
+        </div>
+      </div>
+    }
   }
 </div>
 
@@ -305,6 +341,69 @@
         <button class="btn-sm" (click)="dismissComplete()">Annuler</button>
         <button class="btn-sm btn-primary-sm" (click)="confirmComplete()">
           Oui, terminer
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (bookingToDelete; as booking) {
+  <div class="modal-overlay" (click)="dismissDelete()">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-title"
+      (click)="$event.stopPropagation()">
+
+      <h3 class="modal-title" id="delete-title">Supprimer définitivement cette réservation ?</h3>
+
+      <div class="modal-recap">
+        <div class="recap-row">
+          <span class="recap-label">{{ clientLabel(booking) }}</span>
+          <span class="recap-value">{{ booking.client_name }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Prestation</span>
+          <span class="recap-value">{{ booking.services?.name || '—' }}</span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Date</span>
+          <span class="recap-value">
+            {{ formatDate(booking.booking_date) }} à {{ formatTime(booking.start_time) }}
+          </span>
+        </div>
+        <div class="recap-row">
+          <span class="recap-label">Montant</span>
+          <span class="recap-value strong">{{ amount(booking) }}</span>
+        </div>
+      </div>
+
+      <p class="modal-warning">
+        La réservation <strong>disparaît de l'application</strong>. Si elle était
+        terminée, son montant <strong>sort du chiffre d'affaires</strong> et les
+        statistiques changent.
+      </p>
+
+      <p class="modal-hint">
+        Pour retirer un rendez-vous de l'agenda sans toucher aux comptes,
+        utilisez plutôt <strong>Annuler</strong>. Cette suppression est
+        enregistrée avec votre nom et la date.
+      </p>
+
+      <div class="field delete-reason">
+        <label for="delete-reason">Motif <span class="optional">(facultatif)</span></label>
+        <input
+          id="delete-reason"
+          type="text"
+          [(ngModel)]="deleteReason"
+          placeholder="Doublon, saisie d'essai…">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-sm" [disabled]="deleting" (click)="dismissDelete()">Annuler</button>
+        <button class="btn-sm btn-danger" [disabled]="deleting" (click)="confirmDelete()">
+          {{ deleting ? 'Suppression…' : 'Oui, supprimer' }}
         </button>
       </div>
     </div>

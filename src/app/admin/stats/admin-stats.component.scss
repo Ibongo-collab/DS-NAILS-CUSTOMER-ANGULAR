@@ -60,35 +60,6 @@
   word-break: break-word;
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  border-top: 1px solid rgba(105, 0, 90, 0.08);
-}
-
-.pagination-info {
-  font-size: 0.8rem;
-  color: #8A6A85;
-  font-variant-numeric: tabular-nums;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pagination-page {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #69005A;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 .guest-phone {
   margin-top: 0.25rem;
   font-size: 0.8rem;
@@ -134,4 +105,13 @@ th.num {
   color: #7A3A70;
 
   strong { font-weight: 600; }
+}
+
+/* Prend la place du chiffre du mois pour le compte technique. Une phrase
+   plutôt qu'un vide : sans elle, l'écran paraîtrait cassé. */
+.hero-restricted {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #8A6A85;
+  max-width: 34rem;
 }
