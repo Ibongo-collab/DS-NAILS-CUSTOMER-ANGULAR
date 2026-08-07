@@ -7,8 +7,9 @@ visible par les clientes.
 **Accès** : connectez-vous, puis cliquez sur **Admin** dans la barre du haut.
 Le bouton n'apparaît que pour un compte administrateur.
 
-Sept onglets : **Réservations**, **Statistiques**, **Prestations**,
-**Promotions**, **Horaires**, **Indisponibilités**, **Notifications**.
+Huit onglets : **Réservations**, **Planning**, **Statistiques**,
+**Prestations**, **Promotions**, **Horaires**, **Indisponibilités**,
+**Notifications**.
 
 ---
 
@@ -34,6 +35,35 @@ passés.
 
 Et son pendant : les prestations prises **au comptoir** n'existent nulle part
 tant que vous ne les saisissez pas. Le § 1 explique comment les reporter.
+
+---
+
+## Les prix affichés sont des prix de départ
+
+Un tarif n'est pas ferme : un ajout demandé sur place — motifs, fantaisies,
+longueur — fait monter la note. Le site le dit aux clientes, sur la liste des
+prestations comme sur l'écran de confirmation.
+
+Conséquence pour vous : **partout où un montant apparaît, il est modifiable
+avant d'être comptabilisé.**
+
+- à la **clôture** d'une réservation prise en ligne (§ 1) ;
+- à la **saisie** d'une prestation faite sur place (§ 1).
+
+Saisissez toujours ce qui a réellement été réglé. C'est ce chiffre-là qui entre
+dans les comptes, pas le tarif du catalogue.
+
+---
+
+## Un rendez-vous peut compter plusieurs prestations
+
+« Nattes collées + manucure » est **un seul** rendez-vous, pas deux. La cliente
+les ajoute l'une après l'autre sur le site ; le créneau réservé couvre la somme
+des durées, et le prix de départ la somme des tarifs.
+
+Vous les retrouvez partout sous la forme « Nattes collées + Manucure » : dans le
+tableau, dans le planning, dans les fenêtres de confirmation. Chaque prestation
+compte séparément dans le classement des plus réservées.
 
 ---
 
@@ -69,13 +99,24 @@ aujourd'hui, statut **Confirmées**.
 **Confirmer** — disponible sur une réservation en attente. Elle passe en
 « Confirmé ». Sans effet comptable.
 
-**Terminer** — disponible sur une réservation confirmée, **une fois la prestation
-achevée**, c'est-à-dire son heure de fin passée. Avant, le bouton n'apparaît
-pas : la mention « À venir » ou « En cours » prend sa place, car une prestation
-qui n'est pas rendue ne peut pas être encaissée. **Une fenêtre de confirmation s'ouvre** et rappelle la cliente, la
-prestation, la date et surtout **le montant qui sera comptabilisé**. Validez
-seulement si la prestation a été réalisée *et* réglée : ce montant entre
-immédiatement dans le chiffre d'affaires, le panier moyen et les classements.
+**Terminer** — disponible sur une réservation confirmée, **une fois la
+prestation achevée**, c'est-à-dire son heure de fin passée. Avant, le bouton
+n'apparaît pas : la mention « À venir » ou « En cours » prend sa place, car une
+prestation qui n'est pas rendue ne peut pas être encaissée.
+
+C'est le geste qui alimente la comptabilité, et la fenêtre qui s'ouvre vous
+laisse corriger deux choses avant de valider :
+
+- **le montant réellement encaissé** — pré-rempli au prix de départ, à corriger
+  si un ajout a été demandé sur place ;
+- **les prestations réalisées**, quand le rendez-vous en comptait plusieurs :
+  décochez celle à laquelle la cliente a renoncé. Elle sort du montant, des
+  statistiques, et le créneau est raccourci d'autant dans le planning. La
+  dernière ne peut pas être décochée — sans prestation, c'est une annulation.
+
+> Une prestation décochée n'est pas effacée : elle reste enregistrée comme
+> « non réalisée », et s'affiche à ce titre dans le détail du planning. On peut
+> ainsi expliquer plus tard un montant plus faible que prévu.
 
 **Annuler** — disponible sur une réservation en attente ou confirmée. Le créneau
 est libéré et redevient réservable. Action immédiate, sans confirmation.
@@ -83,8 +124,15 @@ est libéré et redevient réservable. Action immédiate, sans confirmation.
 > Une réservation annulée n'est jamais supprimée : elle reste dans la liste et
 > alimente le taux de désistement.
 
+**Supprimer** — n'apparaît que pour le **super administrateur** (voir la fin du
+guide). Réservé aux erreurs de saisie ; pour un rendez-vous qui n'aura pas lieu,
+c'est « Annuler » qu'il faut.
+
 **Actualiser** recharge la liste — utile si vous avez laissé la page ouverte
 pendant que des clientes réservaient.
+
+La liste affiche **cinq réservations par page**, les plus récentes d'abord, avec
+la navigation en bas du tableau.
 
 ### Enregistrer une prestation faite sur place
 
@@ -95,21 +143,32 @@ cahier.
 
 Cliquez sur **Enregistrer une prestation** pour déplier le formulaire.
 
+En haut, **cochez les prestations réalisées** — une ou plusieurs, comme sur le
+site. Un champ de recherche aide à les retrouver, et l'en-tête récapitule le
+nombre retenu et la durée cumulée. Les prestations masquées y figurent : vous
+pouvez reporter une prestation retirée du site depuis.
+
 | Champ | |
 |---|---|
-| **Prestation** | Celle qui a été réalisée. Les prestations masquées restent proposées : vous pouvez reporter une ancienne prestation |
 | **Nom du client** | Obligatoire |
 | **Date** | Aujourd'hui ou un jour passé. Une date future est refusée : une prestation à venir n'est pas encore réalisée |
 | **Heure** | Heure de début |
-| **Téléphone**, **Email** | Facultatifs |
+| **Téléphone** | **Obligatoire** — voir l'encadré ci-dessous |
+| **Email** | Facultatif |
 
 Ensuite, la partie qui touche à la comptabilité :
 
 - Cochez **« Une remise a été appliquée »** seulement s'il y a eu une remise, et
   saisissez le pourcentage consenti.
-- Le **montant encaissé** s'affiche à droite et se recalcule à chaque frappe.
-  C'est lui qui entrera dans vos comptes : vérifiez qu'il correspond à ce qui a
-  été réglé avant de valider.
+- Le **montant encaissé** est pré-rempli au tarif des prestations cochées, mais
+  reste **modifiable**. C'est lui qui entrera dans vos comptes : saisissez ce qui
+  a réellement été réglé. Quand il s'écarte du tarif, celui-ci s'affiche barré à
+  côté, pour mémoire.
+
+> **Pourquoi le téléphone est obligatoire.** C'est lui qui rattache la
+> prestation à une cliente. Sans téléphone ni e-mail, elle compte bien dans le
+> chiffre d'affaires mais **disparaît du classement des clientes les plus
+> fidèles** : rien ne permet de savoir à qui l'attribuer.
 
 Si une promotion était en cours ce jour-là pour cette prestation, un bandeau
 vous le rappelle, avec un bouton **« L'appliquer »**. Elle n'est jamais cochée
@@ -126,7 +185,51 @@ qu'elle aurait dû payer.
 
 ---
 
-## 2. Statistiques
+## 2. Planning
+
+La même semaine, vue comme un agenda : les heures en colonne de gauche, un jour
+par colonne, chaque rendez-vous placé à sa hauteur réelle et proportionnel à sa
+durée.
+
+Le tableau des Réservations reste l'écran de travail — confirmer, terminer,
+annuler s'y font. Le planning sert à **voir la journée d'un coup d'œil** : les
+trous, les blocs, l'enchaînement.
+
+### Se déplacer
+
+Les flèches ‹ › changent de semaine, **Cette semaine** revient à la semaine en
+cours. Le jour du jour est marqué d'une pastille rose.
+
+### Ce qui est dessiné
+
+| Élément | |
+|---|---|
+| **Blocs colorés** | Un par rendez-vous. La couleur donne l'état : ambre en attente, vert confirmé, violet terminé |
+| **Bandes hachurées** | Vos indisponibilités (§ 7) |
+| **Colonne hachurée entière** | Un jour de fermeture |
+
+Deux rendez-vous à la même heure se placent **côte à côte**, chacun sur la
+moitié de la largeur.
+
+> Les réservations **annulées ne sont pas affichées** : leur créneau est de
+> nouveau libre, les montrer laisserait croire l'inverse. C'est rappelé dans la
+> légende sous la grille.
+
+### Le détail d'un rendez-vous
+
+Un clic sur un bloc ouvre sa fiche : statut, prestations, téléphone, e-mail,
+montant, notes — et, le cas échéant, les prestations **non réalisées**, barrées.
+
+Cette fiche est en **lecture seule**. Confirmer, terminer ou annuler se fait
+depuis l'onglet Réservations, pour que la règle de clôture et sa fenêtre de
+confirmation restent au même endroit.
+
+Sur téléphone, la grille se fait défiler horizontalement : sept journées
+lisibles ne tiennent pas dans la largeur d'un écran.
+
+---
+
+## 3. Statistiques
 
 ### Le chiffre du mois
 
@@ -215,7 +318,7 @@ en ligne ou au comptoir, tout se retrouve dans les mêmes chiffres.
 
 ---
 
-## 3. Prestations
+## 4. Prestations
 
 ### Les catégories, en haut de l'écran
 
@@ -273,10 +376,10 @@ masquer la prestation à la place.
 
 ---
 
-## 4. Promotions
+## 5. Promotions
 
-Une remise en pourcentage, sur **toutes** les prestations ou sur **une seule**,
-entre deux dates.
+Une remise en pourcentage, sur **toutes** les prestations ou sur **celles de
+votre choix**, entre deux dates.
 
 ### Créer une promotion
 
@@ -284,8 +387,13 @@ entre deux dates.
 |---|---|
 | **Nom** | Visible par la cliente sur l'écran de confirmation (« Offre de rentrée ») |
 | **Remise (%)** | De 1 à 100 |
-| **S'applique à** | « Toutes les prestations », ou une prestation précise |
+| **S'applique à** | « Toutes les prestations », ou « Certaines prestations… » |
 | **Début**, **Fin** | Les deux dates sont **incluses** |
+
+En choisissant « Certaines prestations… », une liste à cocher s'ouvre : cochez-en
+autant que vous voulez, avec une recherche et les boutons **Tout cocher** /
+**Tout décocher**. Les prestations masquées y figurent, signalées comme telles —
+utile pour préparer une promotion sur une prestation pas encore remise en ligne.
 
 **La remise s'applique selon la date du rendez-vous, pas la date de
 réservation.** Une cliente qui réserve aujourd'hui pour un rendez-vous après la
@@ -293,9 +401,9 @@ fin de la promotion paie le prix plein — et inversement.
 
 ### Ce que voit la cliente
 
-Sur la liste des prestations, le prix public apparaît **barré**, suivi du prix
-remisé et d'une pastille « −20 % ». L'écran de confirmation affiche le montant
-exact qui sera facturé, avec le nom de la promotion.
+Sur la liste des prestations, le prix de départ apparaît **barré**, suivi du prix
+remisé et d'une pastille « −20 % ». L'écran de confirmation reprend le détail,
+avec le nom de la promotion.
 
 ### Le tableau
 
@@ -308,9 +416,15 @@ Chaque promotion porte un état, calculé à partir des dates :
 | **Terminée** | Sa date de fin est passée |
 | **Désactivée** | Vous l'avez mise en pause |
 
-- **Modifier** rend la ligne éditable.
+La colonne « S'applique à » affiche « Toutes les prestations », le nom quand il
+n'y en a qu'une, ou « 3 prestations » — passez la souris dessus pour lire le
+détail.
+
+- **Modifier** reprend la promotion **dans le formulaire du haut**, ce qui
+  permet d'en changer aussi les prestations. La ligne en cours de modification
+  est marquée d'un liseré rose.
 - **Désactiver** l'interrompt sans la supprimer : les prix reviennent au tarif
-  public. **Activer** la remet en service.
+  de départ. **Activer** la remet en service.
 - **Supprimer** l'efface définitivement.
 
 ### Deux règles à connaître
@@ -325,7 +439,7 @@ d'affaires passé ne se réécrit jamais.
 
 ---
 
-## 5. Horaires
+## 6. Horaires
 
 Les horaires d'ouverture, un jour par ligne.
 
@@ -354,7 +468,7 @@ rendez-vous possibles.
 
 ---
 
-## 6. Indisponibilités
+## 7. Indisponibilités
 
 Pour bloquer un moment précis sans toucher aux horaires habituels : congés,
 formation, rendez-vous personnel.
@@ -384,7 +498,7 @@ supprimées à tout moment.
 
 ---
 
-## 7. Notifications
+## 8. Notifications
 
 Les messages WhatsApp envoyés au salon et aux clientes.
 
@@ -411,6 +525,8 @@ Deux interrupteurs :
 Quand, quel événement, destinataire, contenu, état. Un message **En attente**
 n'est pas une erreur : c'est la file, normale tant que l'envoi n'est pas activé.
 
+Filtrable par état et par destinataire, **cinq messages par page**.
+
 ---
 
 ## Trois mentions vues côté client
@@ -422,6 +538,25 @@ Sur l'écran de choix de la date, une date grisée porte un motif :
 | **Fermé** | Le jour est marqué fermé | Onglet **Horaires** |
 | **Indisponible** | Un blocage couvre la journée | Onglet **Indisponibilités** |
 | **Complet** | Tous les créneaux sont pris | Rien à corriger — c'est une bonne nouvelle |
+
+---
+
+## Les deux niveaux d'accès
+
+| | Administratrice | Super administrateur |
+|---|---|---|
+| Réservations, planning, prestations, promotions, horaires, notifications | Oui | Oui |
+| **Chiffres d'affaires** (CA du mois, CA cumulé, panier moyen, graphique du CA) | Oui | **Non** |
+| **Supprimer une réservation** | Non | **Oui** |
+| Bouton **Terminer** avant l'heure de fin | Non | **Oui** |
+
+Le super administrateur est un **accès technique**, pas un accès comptable :
+il peut réparer ce que la règle n'avait pas prévu, mais les montants globaux
+lui sont masqués. Un message le lui rappelle à la place du chiffre du mois.
+
+Une suppression de réservation est toujours **enregistrée avec son auteur, la
+date et le motif** : elle disparaît de l'application, jamais de la base. C'est
+ce qui permet d'expliquer plus tard un écart dans les comptes.
 
 ---
 

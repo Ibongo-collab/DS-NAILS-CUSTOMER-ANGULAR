@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../admin.service';
 import { Promotion, Service } from '../../models/booking.model';
-import { parseDateString, todayString } from '../../utils/date';
+import { formatShortDate, todayString } from '../../utils/date';
 
 /** Où en est une promotion par rapport à aujourd'hui. */
 type PromotionState = 'running' | 'scheduled' | 'ended' | 'disabled';
@@ -303,8 +303,6 @@ export class AdminPromotionsComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return formatShortDate(dateString);
   }
 }

@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../admin.service';
 import { BlockedSlot } from '../../models/booking.model';
-import { parseDateString, todayString } from '../../utils/date';
+import { formatDayDate, todayString } from '../../utils/date';
 
 @Component({
   selector: 'app-admin-blocked-slots',
@@ -95,10 +95,7 @@ export class AdminBlockedSlotsComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return formatDayDate(dateString);
   }
 
   formatTime(time: string): string {

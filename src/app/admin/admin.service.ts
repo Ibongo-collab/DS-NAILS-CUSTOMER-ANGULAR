@@ -103,7 +103,9 @@ export class AdminService {
       this.supabase.client
         .from('bookings')
         // `price` alimente les statistiques comptables
-        .select('*, services(name, duration_minutes, price)')
+        // `services` porte la prestation principale ; `booking_services` la
+        // liste complète d'un rendez-vous qui en compte plusieurs.
+        .select('*, services(name, duration_minutes, price), booking_services(service_id, price_at_booking, duration_minutes, position, fulfilled, services(name))')
         .order('booking_date', { ascending: false })
         .order('start_time', { ascending: false }),
       this.supabase.client.from('profiles').select('id, email, gender')
@@ -151,6 +153,35 @@ export class AdminService {
     if (error) return this.fail(error, 'Impossible de mettre à jour la réservation.');
     if (!data || data.length === 0) {
       return { success: false, error: 'Mise à jour refusée. Vérifiez vos droits administrateur.' };
+    }
+    return { success: true };
+  }
+
+  /**
+   * Clôture une réservation en figeant le montant réellement encaissé.
+   *
+   * Les tarifs affichés sont des prix de départ : un ajout demandé sur place
+   * fait monter la note. Le montant retenu à la clôture l'emporte donc sur
+   * celui calculé à la réservation — c'est lui qui entre dans les comptes.
+   */
+  async completeBooking(
+    bookingId: string,
+    amount: number,
+    /** Prestations réellement réalisées. Omis = toutes celles réservées. */
+    serviceIds?: string[]
+  ): Promise<AdminResult> {
+    const { error } = await this.supabase.client.rpc('complete_booking', {
+      p_id: bookingId,
+      p_amount: amount,
+      p_service_ids: serviceIds ?? null
+    });
+
+    if (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'P0001' || code === 'P0002' || code === 'P0003') {
+        return { success: false, error: error.message };
+      }
+      return this.fail(error, 'Impossible de clôturer la réservation.');
     }
     return { success: true };
   }
@@ -458,24 +489,28 @@ export class AdminService {
    * aussitôt dans le chiffre d'affaires.
    */
   async createManualBooking(entry: {
-    service_id: string;
+    /** Une ou plusieurs prestations, comme sur le site */
+    service_ids: string[];
     client_name: string;
     booking_date: string;
     start_time: string;
     discount_percent: number;
+    /** Montant réellement encaissé. Prime sur le tarif de la prestation. */
+    amount: number;
     client_phone?: string;
     client_email?: string;
     notes?: string;
   }): Promise<AdminResult> {
     const { error } = await this.supabase.client.rpc('create_manual_booking', {
-      p_service_id: entry.service_id,
+      p_service_ids: entry.service_ids,
       p_client_name: entry.client_name,
       p_booking_date: entry.booking_date,
       p_start_time: entry.start_time,
       p_discount_percent: entry.discount_percent,
       p_client_phone: entry.client_phone || null,
       p_client_email: entry.client_email || null,
-      p_notes: entry.notes || null
+      p_notes: entry.notes || null,
+      p_amount: entry.amount
     });
 
     if (error) {
@@ -507,7 +542,7 @@ export class AdminService {
 
     return (data as any[]).map(row => ({
       ...row,
-      service_ids: (row.promotion_services ?? []).map((lien: any) => lien.service_id)
+      service_ids: (row.promotion_services ?? []).map((lien: { service_id: string }) => lien.service_id)
     })) as Promotion[];
   }
 

@@ -6,6 +6,8 @@ import {
   NotificationSettings,
   NotificationStatus
 } from '../admin.service';
+import { MOIS_COURTS } from '../../utils/date';
+import { Pagination } from '../pagination';
 
 type StatusFilter = NotificationStatus | 'all';
 
@@ -145,6 +147,27 @@ export class AdminNotificationsComponent implements OnInit {
     });
   }
 
+  // --- Pagination ---
+  // Le journal ne se purge pas : il grandit à chaque réservation.
+
+  /** Cinq lignes, comme le tableau des réservations. */
+  private readonly pagination = new Pagination(5);
+
+  get page(): number { return this.pagination.page; }
+  get pageCount(): number { return this.pagination.count(this.filtered.length); }
+  get pagedNotifications(): NotificationRow[] { return this.pagination.slice(this.filtered); }
+  get rangeStart(): number { return this.pagination.start(this.filtered.length); }
+  get rangeEnd(): number { return this.pagination.end(this.filtered.length); }
+
+  goToPage(page: number): void {
+    this.pagination.goTo(page, this.filtered.length);
+  }
+
+  /** Tout changement de filtre ramène à la première page. */
+  onFilterChange(): void {
+    this.pagination.reset();
+  }
+
   get pendingCount(): number {
     return this.notifications.filter(n => n.status === 'queued').length;
   }
@@ -161,12 +184,15 @@ export class AdminNotificationsComponent implements OnInit {
     return audience === 'admin' ? 'Salon' : 'Cliente';
   }
 
+  /**
+   * « 7 août · 14h30 ». `value` est un horodatage complet, pas une date de
+   * calendrier : `new Date` est ici le bon outil, il rend l'heure locale.
+   */
   formatMoment(value: string): string {
     if (!value) return '—';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '—';
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
     const time = `${date.getHours()}h${String(date.getMinutes()).padStart(2, '0')}`;
-    return `${date.getDate()} ${months[date.getMonth()]} · ${time}`;
+    return `${date.getDate()} ${MOIS_COURTS[date.getMonth()]} · ${time}`;
   }
 }

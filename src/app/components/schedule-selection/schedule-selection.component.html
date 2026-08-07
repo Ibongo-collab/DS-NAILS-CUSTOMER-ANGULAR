@@ -15,47 +15,82 @@
 
   <main class="main-content">
 
-    <!-- Rappel de la prestation choisie -->
-    @if (service; as chosen) {
+    <!-- Composition du rendez-vous -->
+    @if (services.length) {
       <p class="section-eyebrow">Rendez-vous</p>
 
       <section class="service-card">
         <button
           type="button"
           class="clear-service"
-          (click)="clearService()"
-          aria-label="Choisir une autre prestation"
-          title="Choisir une autre prestation">
+          (click)="clearAll()"
+          aria-label="Reprendre le choix des prestations"
+          title="Tout reprendre">
           &times;
         </button>
 
-        <div class="service-body">
-          @if (chosen.image_url) {
-            <img class="service-image" [src]="chosen.image_url" [alt]="chosen.name">
-          }
+        @for (chosen of services; track $index) {
+          <div class="service-body" [class.stacked]="!$first">
+            @if (chosen.image_url) {
+              <img class="service-image" [src]="chosen.image_url" [alt]="chosen.name">
+            }
 
-          <div class="service-text">
-            <h1 class="service-name">{{ chosen.name }}</h1>
+            <div class="service-text">
+              <h1 class="service-name">{{ chosen.name }}</h1>
 
-            <p class="service-meta">
-              {{ chosen.duration_minutes | duration }} à
-              @if (pricing && pricing.discountPercent) {
-                <span class="price-was">{{ priceLabel(pricing.basePrice) }}</span>
-                <span class="price-now">{{ priceLabel(pricing.finalPrice) }}</span>
-                <span class="price-tag">−{{ pricing.discountPercent }} %</span>
-              } @else {
-                {{ priceLabel(pricing?.basePrice ?? chosen.price) }}
-              }
-            </p>
-
-            @if (chosen.description) {
-              <p class="service-description" [class.collapsed]="!descriptionOpen">
-                {{ chosen.description }}
+              <p class="service-meta">
+                {{ chosen.duration_minutes | duration }} · à partir de
+                @if (pricingAt($index); as price) {
+                  @if (price.discountPercent) {
+                    <span class="price-was">{{ priceLabel(price.basePrice) }}</span>
+                    <span class="price-now">{{ priceLabel(price.finalPrice) }}</span>
+                    <span class="price-tag">−{{ price.discountPercent }} %</span>
+                  } @else {
+                    <span class="price-now">{{ priceLabel(price.basePrice) }}</span>
+                  }
+                } @else {
+                  <span class="price-now">{{ priceLabel(chosen.price) }}</span>
+                }
               </p>
-              <button type="button" class="link-btn" (click)="toggleDescription()">
-                {{ descriptionOpen ? 'Réduire' : 'Tout afficher' }}
+
+              @if (chosen.description) {
+                <p class="service-description" [class.collapsed]="!isDescriptionOpen(chosen.id)">
+                  {{ chosen.description }}
+                </p>
+                <button type="button" class="link-btn" (click)="toggleDescription(chosen.id)">
+                  {{ isDescriptionOpen(chosen.id) ? 'Réduire' : 'Tout afficher' }}
+                </button>
+              }
+            </div>
+
+            @if (services.length > 1) {
+              <button
+                type="button"
+                class="remove-service"
+                (click)="removeService($index)"
+                [attr.aria-label]="'Retirer ' + chosen.name"
+                title="Retirer cette prestation">
+                Retirer
               </button>
             }
+          </div>
+        }
+
+        <div class="appointment-footer">
+          <button type="button" class="add-service" (click)="addService()">
+            + Ajouter une prestation
+          </button>
+
+          <div class="appointment-total">
+            <span class="total-label">
+              Total · {{ totalDuration | duration }}
+            </span>
+            <span class="total-value">
+              @if (hasDiscount) {
+                <span class="price-was">{{ priceLabel(totalBasePrice) }}</span>
+              }
+              à partir de {{ priceLabel(totalPrice) }}
+            </span>
           </div>
         </div>
       </section>

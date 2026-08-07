@@ -93,6 +93,9 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   max-width: 460px;
   max-height: 85vh;
+  /* C'est `.modal-body` qui défile, pas la fenêtre : les boutons doivent
+     rester hors de la zone défilante, sinon ils recouvrent le dernier champ. */
+  overflow: hidden;
   padding: 1.65rem 1.5rem 1.4rem;
   border-radius: 16px;
   background: #fff;
@@ -139,10 +142,28 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 1.4rem;
 }
 
+/* Corps défilant de la fenêtre. Le titre au-dessus et les boutons en dessous
+   restent en place ; seul ce bloc défile.
+   Nommé `modal-scroll` et non `modal-body` : ce dernier sert déjà, dans
+   l'espace client, à un simple paragraphe de rappel.
+   `min-height: 0` est indispensable : sans lui, un enfant flex refuse de
+   devenir plus petit que son contenu et rien ne défile.
+   Les marges négatives font longer la barre de défilement au bord de la
+   fenêtre plutôt qu'au milieu du retrait. */
+.modal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -1.5rem;
+  padding: 0 1.5rem;
+}
+
 .modal-actions {
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+  padding-top: 0.9rem;
 
   .btn-sm { margin-left: 0; }
 }

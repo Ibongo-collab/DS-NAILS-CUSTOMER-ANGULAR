@@ -1,5 +1,7 @@
 import { Booking } from '../../models/booking.model';
 import { ChartPoint } from './chart.model';
+import { serviceNames } from '../booking-services';
+import { MOIS_COURTS, MOIS_LONGS } from '../../utils/date';
 
 /**
  * Base comptable : seules les réservations **terminées** comptent.
@@ -16,8 +18,8 @@ export const BILLABLE_STATUSES = ['completed'];
  */
 export const HONORED_STATUSES = ['confirmed', 'completed'];
 
-const MONTH_LABELS = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-const MONTH_FULL = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MONTH_LABELS = MOIS_COURTS;
+const MONTH_FULL = MOIS_LONGS;
 
 export interface LoyalClient {
   /** Clé de regroupement : email si connu, sinon téléphone */
@@ -231,10 +233,15 @@ export function computeAccountingStats(
 
   // --- Prestations ---
 
+  // Un rendez-vous peut compter plusieurs prestations : chacune est comptée.
+  // S'en tenir à `booking.services` ne retiendrait que la principale, et les
+  // prestations courtes — celles qu'on ajoute à une autre — n'apparaîtraient
+  // jamais dans ce classement.
   const perService = new Map<string, number>();
   for (const booking of billable) {
-    const name = booking.services?.name || 'Prestation supprimée';
-    perService.set(name, (perService.get(name) ?? 0) + 1);
+    for (const name of serviceNames(booking)) {
+      perService.set(name, (perService.get(name) ?? 0) + 1);
+    }
   }
 
   const topServices: ChartPoint[] = [...perService.entries()]

@@ -72,10 +72,10 @@
                 [style.left.%]="placed.left"
                 [style.width.%]="placed.width"
                 (click)="open(placed.booking)"
-                [attr.title]="placed.booking.client_name + ' — ' + (placed.booking.services?.name || '')">
+                [attr.title]="placed.booking.client_name + ' — ' + servicesLabel(placed.booking)">
                 <span class="booking-time">{{ shortTime(placed.booking.start_time) }}</span>
                 <span class="booking-name">{{ placed.booking.client_name }}</span>
-                <span class="booking-service">{{ placed.booking.services?.name }}</span>
+                <span class="booking-service">{{ servicesLabel(placed.booking) }}</span>
               </button>
             }
           </div>
@@ -109,6 +109,7 @@
         {{ formatDate(booking.booking_date) }} · {{ hourRange(booking) }}
       </p>
 
+      <div class="modal-scroll">
       <div class="modal-recap">
         <div class="recap-row">
           <span class="recap-label">Statut</span>
@@ -120,8 +121,14 @@
         </div>
         <div class="recap-row">
           <span class="recap-label">Prestation</span>
-          <span class="recap-value">{{ booking.services?.name || '—' }}</span>
+          <span class="recap-value">{{ servicesLabel(booking) }}</span>
         </div>
+        @if (droppedLabel(booking); as abandonnees) {
+          <div class="recap-row">
+            <span class="recap-label">Non réalisée(s)</span>
+            <span class="recap-value dropped">{{ abandonnees }}</span>
+          </div>
+        }
         <div class="recap-row">
           <span class="recap-label">{{ clientLabel(booking) }}</span>
           <span class="recap-value">{{ booking.client_name }}</span>
@@ -149,6 +156,7 @@
       <p class="modal-hint">
         Confirmer, terminer ou annuler se fait depuis l'onglet <strong>Réservations</strong>.
       </p>
+      </div>
 
       <div class="modal-actions">
         <button class="btn-sm" (click)="close()">Fermer</button>

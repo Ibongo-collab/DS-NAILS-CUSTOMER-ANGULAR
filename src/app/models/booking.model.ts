@@ -83,8 +83,33 @@ export interface Booking {
   created_at?: string;
   updated_at?: string;
   expires_at?: string;
-  // `price` n'est renseigné que par les requêtes admin qui le demandent
+  /**
+   * Prestation principale — la plus longue du rendez-vous. Conservée pour
+   * nommer la réservation là où une seule peut tenir.
+   * `price` n'est renseigné que par les requêtes admin qui le demandent.
+   */
   services?: { name: string; duration_minutes: number; price?: number } | null;
+  /**
+   * Toutes les prestations du rendez-vous, dans l'ordre choisi.
+   * Absent des requêtes qui ne les demandent pas.
+   */
+  booking_services?: BookingLine[];
+}
+
+/** Une prestation d'un rendez-vous qui en compte plusieurs. */
+export interface BookingLine {
+  service_id: string;
+  /** Prix figé de cette ligne. Leur somme vaut `Booking.price_at_booking`. */
+  price_at_booking: number | null;
+  duration_minutes: number;
+  position: number;
+  /**
+   * Prestation réellement réalisée. `false` quand la cliente y a renoncé au
+   * dernier moment : la ligne est conservée pour garder la trace de ce qui
+   * avait été réservé.
+   */
+  fulfilled?: boolean;
+  services?: { name: string } | null;
 }
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -121,7 +146,8 @@ export interface DateAvailability {
 }
 
 export interface BookingRequest {
-  service_id: string;
+  /** Une ou plusieurs prestations, dans l'ordre d'exécution souhaité. */
+  service_ids: string[];
   client_name: string;
   client_phone: string;
   client_email: string;
@@ -138,7 +164,11 @@ export interface AvailableSlotsRequest {
 
 // DTO pour l'état de la réservation en cours
 export interface BookingState {
-  selectedService: Service | null;
+  /**
+   * Prestations retenues, dans l'ordre d'ajout. Vide tant que rien n'est
+   * choisi — un rendez-vous peut en compter plusieurs.
+   */
+  selectedServices: Service[];
   selectedDate: string | null;
   selectedTime: string | null;
   clientInfo: {

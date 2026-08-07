@@ -11,8 +11,12 @@
         <div class="detail-row">
           <div class="detail-icon"><app-icon name="sparkles" [size]="22"></app-icon></div>
           <div class="detail-info">
-            <div class="detail-label">Service</div>
-            <div class="detail-value">{{ bookingState.selectedService?.name }}</div>
+            <div class="detail-label">
+              {{ bookingState.selectedServices.length > 1 ? 'Prestations' : 'Prestation' }}
+            </div>
+            @for (service of bookingState.selectedServices; track $index) {
+              <div class="detail-value">{{ service.name }}</div>
+            }
           </div>
         </div>
 
@@ -61,20 +65,56 @@
         <div class="detail-row">
           <div class="detail-icon"><app-icon name="wallet" [size]="22"></app-icon></div>
           <div class="detail-info">
-            <div class="detail-label">Prix</div>
-            @if (pricing && pricing.discountPercent) {
-              <div class="detail-value">
-                <span class="price-was">{{ priceLabel(pricing.basePrice) }}</span>
-                {{ priceLabel(pricing.finalPrice) }}
-              </div>
-              <div class="price-note">
-                {{ pricing.promotionName }} : −{{ pricing.discountPercent }} %
+            <div class="detail-label">Prix de départ</div>
+
+            @if (bookingState.selectedServices.length > 1) {
+              <!-- Le détail ligne par ligne : la cliente doit voir d'où vient le total -->
+              @for (service of bookingState.selectedServices; track $index) {
+                <div class="price-line">
+                  <span class="price-line-name">{{ service.name }}</span>
+                  <span class="price-line-value">
+                    @if (pricingAt($index); as price) {
+                      @if (price.discountPercent) {
+                        <span class="price-was">{{ priceLabel(price.basePrice) }}</span>
+                      }
+                      {{ priceLabel(price.finalPrice) }}
+                    } @else {
+                      {{ priceLabel(service.price) }}
+                    }
+                  </span>
+                </div>
+              }
+              <div class="price-line price-line-total">
+                <span class="price-line-name">Total</span>
+                <span class="price-line-value">
+                  @if (hasDiscount) {
+                    <span class="price-was">{{ priceLabel(totalBasePrice) }}</span>
+                  }
+                  {{ priceLabel(totalPrice) }}
+                </span>
               </div>
             } @else {
-              <div class="detail-value">
-                {{ priceLabel(pricing?.basePrice ?? bookingState.selectedService?.price ?? 0) }}
-              </div>
+              @if (pricingAt(0); as price) {
+                <div class="detail-value">
+                  @if (price.discountPercent) {
+                    <span class="price-was">{{ priceLabel(price.basePrice) }}</span>
+                  }
+                  {{ priceLabel(price.finalPrice) }}
+                </div>
+                @if (price.discountPercent) {
+                  <div class="price-note">
+                    {{ price.promotionName }} : −{{ price.discountPercent }} %
+                  </div>
+                }
+              } @else {
+                <div class="detail-value">{{ priceLabel(totalPrice) }}</div>
+              }
             }
+
+            <div class="price-variable">
+              Un ajout demandé sur place peut faire varier ce montant. Le prix
+              définitif vous est confirmé au salon.
+            </div>
           </div>
         </div>
       </div>

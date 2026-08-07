@@ -5,6 +5,9 @@ import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../admin.service';
 import { Booking } from '../../models/booking.model';
 import { ClientRow, ClientSignup } from '../admin.service';
+import { formatShortDate } from '../../utils/date';
+import { formatAmount } from '../../utils/money';
+import { Pagination } from '../pagination';
 import {
   AccountingStats,
   ClientGrowth,
@@ -56,8 +59,9 @@ export class AdminStatsComponent implements OnInit {
   clientList: ClientRow[] = [];
   clientSearch = '';
   clientStatus: 'all' | 'verified' | 'unverified' = 'all';
-  clientPage = 1;
+  /** Taille liée au sélecteur de l'écran ; la pagination la recopie. */
   clientPageSize = 10;
+  private readonly pagination = new Pagination(this.clientPageSize);
 
   readonly clientStatusOptions = [
     { value: 'all' as const, label: 'Tous les comptes' },
@@ -212,54 +216,40 @@ export class AdminStatsComponent implements OnInit {
     });
   }
 
-  get clientPageCount(): number {
-    return Math.max(1, Math.ceil(this.filteredClients.length / this.clientPageSize));
-  }
-
-  get pagedClients(): ClientRow[] {
-    // Un filtre peut réduire la liste sous la page courante : on la ramène dans les bornes
-    const page = Math.min(this.clientPage, this.clientPageCount);
-    const start = (page - 1) * this.clientPageSize;
-    return this.filteredClients.slice(start, start + this.clientPageSize);
-  }
-
-  get clientRangeStart(): number {
-    if (!this.filteredClients.length) return 0;
-    return (Math.min(this.clientPage, this.clientPageCount) - 1) * this.clientPageSize + 1;
-  }
-
-  get clientRangeEnd(): number {
-    return Math.min(this.clientRangeStart + this.clientPageSize - 1, this.filteredClients.length);
-  }
+  get clientPage(): number { return this.pagination.page; }
+  get clientPageCount(): number { return this.pagination.count(this.filteredClients.length); }
+  get pagedClients(): ClientRow[] { return this.pagination.slice(this.filteredClients); }
+  get clientRangeStart(): number { return this.pagination.start(this.filteredClients.length); }
+  get clientRangeEnd(): number { return this.pagination.end(this.filteredClients.length); }
 
   onClientFilterChange(): void {
-    this.clientPage = 1;
+    // Le sélecteur de taille passe par ici : la valeur choisie doit rejoindre
+    // la pagination avant que la page ne soit remise à un.
+    this.pagination.pageSize = this.clientPageSize;
+    this.pagination.reset();
   }
 
   goToPage(page: number): void {
-    this.clientPage = Math.min(Math.max(page, 1), this.clientPageCount);
+    this.pagination.goTo(page, this.filteredClients.length);
   }
 
   resetClientFilters(): void {
     this.clientSearch = '';
     this.clientStatus = 'all';
-    this.clientPage = 1;
+    this.pagination.reset();
   }
 
   formatSignupDate(value: string): string {
     if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    // `slice` tolère une date seule comme un horodatage complet ; `new Date`
+    // aurait lu la première en UTC et affiché la veille dans un fuseau négatif.
+    return formatShortDate(String(value).slice(0, 10));
   }
 
   // --- Formatage ---
 
   money(value: number): string {
-    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
-      Math.round(value || 0)
-    )} FCFA`;
+    return formatAmount(value);
   }
 
   percent(value: number): string {
@@ -273,8 +263,6 @@ export class AdminStatsComponent implements OnInit {
 
   formatDate(dateString: string): string {
     if (!dateString) return '—';
-    const date = new Date(dateString + 'T00:00:00');
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return formatShortDate(dateString);
   }
 }

@@ -3,16 +3,21 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { PhoneInputComponent } from '../../components/shared/phone-input/phone-input.component';
+import { DurationPipe } from '../../pipes/duration.pipe';
 import { AdminService, AdminStats } from '../admin.service';
-import { Booking, BookingStatus, Promotion, Service } from '../../models/booking.model';
+import { servicesLabel } from '../booking-services';
+import { Pagination } from '../pagination';
+import { Booking, BookingLine, BookingStatus, Promotion, Service } from '../../models/booking.model';
 import { applyDiscount, bestPromotion } from '../../services/pricing';
-import { parseDateString, todayString } from '../../utils/date';
+import { formatDayDate, todayString } from '../../utils/date';
+import { formatAmount } from '../../utils/money';
 
 type StatusFilter = BookingStatus | 'all';
 
 /** Prestation réalisée au comptoir, reportée du cahier. */
 interface ManualEntry {
-  service_id: string;
+  /** Prestations réalisées, dans l'ordre d'ajout. */
+  service_ids: string[];
   client_name: string;
   client_phone: string;
   client_email: string;
@@ -20,12 +25,18 @@ interface ManualEntry {
   start_time: string;
   discounted: boolean;
   discount_percent: number | null;
+  /**
+   * Montant réellement encaissé. Pré-rempli à partir du tarif, mais modifiable :
+   * les prix affichés sont des prix de départ, un ajout demandé sur place les
+   * fait monter.
+   */
+  amount: number | null;
 }
 
 @Component({
   selector: 'app-admin-bookings',
   standalone: true,
-  imports: [FormsModule, PhoneInputComponent],
+  imports: [FormsModule, PhoneInputComponent, DurationPipe],
   templateUrl: './admin-bookings.component.html',
   styleUrls: ['./admin-bookings.component.scss']
 })
@@ -117,37 +128,21 @@ export class AdminBookingsComponent implements OnInit {
   // --- Pagination ---
 
   /** Cinq lignes par page : la liste grossit sans fin avec le temps. */
-  readonly pageSize = 5;
-  page = 1;
+  private readonly pagination = new Pagination(5);
 
-  get pageCount(): number {
-    return Math.max(1, Math.ceil(this.filteredBookings.length / this.pageSize));
-  }
-
-  get pagedBookings(): Booking[] {
-    // Un filtre peut réduire la liste sous la page courante : on la ramène
-    // dans les bornes sans toucher au champ, qui reste l'intention de l'admin
-    const page = Math.min(this.page, this.pageCount);
-    const start = (page - 1) * this.pageSize;
-    return this.filteredBookings.slice(start, start + this.pageSize);
-  }
-
-  get rangeStart(): number {
-    if (!this.filteredBookings.length) return 0;
-    return (Math.min(this.page, this.pageCount) - 1) * this.pageSize + 1;
-  }
-
-  get rangeEnd(): number {
-    return Math.min(this.rangeStart + this.pageSize - 1, this.filteredBookings.length);
-  }
+  get page(): number { return this.pagination.page; }
+  get pageCount(): number { return this.pagination.count(this.filteredBookings.length); }
+  get pagedBookings(): Booking[] { return this.pagination.slice(this.filteredBookings); }
+  get rangeStart(): number { return this.pagination.start(this.filteredBookings.length); }
+  get rangeEnd(): number { return this.pagination.end(this.filteredBookings.length); }
 
   goToPage(page: number): void {
-    this.page = Math.min(Math.max(page, 1), this.pageCount);
+    this.pagination.goTo(page, this.filteredBookings.length);
   }
 
   /** Tout changement de filtre ramène à la première page. */
   onFilterChange(): void {
-    this.page = 1;
+    this.pagination.reset();
   }
 
   get filteredBookings(): Booking[] {
@@ -216,9 +211,19 @@ export class AdminBookingsComponent implements OnInit {
   /**
    * Clôturer n'a de sens qu'une fois la prestation achevée : plus tôt, elle
    * n'a pas été rendue, et la comptabiliser fausserait le chiffre d'affaires.
+   *
+   * Le super administrateur échappe à ce verrou : c'est un accès technique,
+   * qui doit pouvoir rattraper une situation que la règle n'avait pas prévue.
+   * La fenêtre de confirmation le prévient alors que l'heure n'est pas venue.
    */
   canComplete(booking: Booking): boolean {
-    return booking.status === 'confirmed' && this.hasEnded(booking);
+    if (booking.status !== 'confirmed') return false;
+    return this.isSuperAdmin || this.hasEnded(booking);
+  }
+
+  /** Clôture demandée avant la fin du rendez-vous — super administrateur seul. */
+  get completingEarly(): boolean {
+    return !!this.bookingToComplete && !this.hasEnded(this.bookingToComplete);
   }
 
   /**
@@ -236,23 +241,120 @@ export class AdminBookingsComponent implements OnInit {
 
   // --- Clôture d'une réservation ---
 
+  /** Montant à comptabiliser, ajustable avant de clôturer. */
+  completionAmountValue: number | null = null;
+
+  /** Lignes du rendez-vous, avec ce qui a réellement été réalisé. */
+  completionLines: { line: BookingLine; name: string; done: boolean }[] = [];
+
   askComplete(booking: Booking): void {
     this.bookingToComplete = booking;
+
+    // Toutes réalisées par défaut : le cas courant, et décocher est un geste
+    // délibéré.
+    this.completionLines = [...(booking.booking_services ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map(line => ({
+        line,
+        name: line.services?.name || 'Prestation supprimée',
+        done: true
+      }));
+
+    // Pré-rempli au prix figé à la réservation ; à défaut, au tarif actuel
+    const montant = booking.price_at_booking ?? booking.services?.price;
+    this.completionAmountValue = montant === null || montant === undefined
+      ? null
+      : Math.round(Number(montant));
+
     this.error = '';
     this.cdr.detectChanges();
   }
 
   dismissComplete(): void {
     this.bookingToComplete = null;
+    this.completionAmountValue = null;
+    this.completionLines = [];
     this.cdr.detectChanges();
+  }
+
+  /** Le détail ne s'affiche que s'il y a matière à choisir. */
+  get hasCompletionLines(): boolean {
+    return this.completionLines.length > 1;
+  }
+
+  get keptLines(): { line: BookingLine; name: string; done: boolean }[] {
+    return this.completionLines.filter(l => l.done);
+  }
+
+  /**
+   * Décocher une prestation retire son montant du total proposé.
+   *
+   * Le champ reste ensuite modifiable : la somme des lignes n'est qu'un point
+   * de départ, c'est l'encaissement réel qui fait foi.
+   */
+  toggleCompletionLine(index: number): void {
+    const ligne = this.completionLines[index];
+    if (!ligne) return;
+
+    // La dernière ne se décoche pas : un rendez-vous sans prestation est une
+    // annulation, pas une clôture.
+    if (ligne.done && this.keptLines.length <= 1) return;
+
+    ligne.done = !ligne.done;
+
+    const somme = this.keptLines.reduce(
+      (total, l) => total + Number(l.line.price_at_booking ?? 0),
+      0
+    );
+    if (somme > 0) this.completionAmountValue = Math.round(somme);
+  }
+
+  /** Le montant retenu s'écarte-t-il de celui prévu à la réservation ? */
+  get completionAmountAdjusted(): boolean {
+    const booking = this.bookingToComplete;
+    if (!booking || this.completionAmountValue === null) return false;
+    const prevu = booking.price_at_booking ?? booking.services?.price;
+    if (prevu === null || prevu === undefined) return false;
+    return Number(this.completionAmountValue) !== Math.round(Number(prevu));
+  }
+
+  get canConfirmComplete(): boolean {
+    const montant = Number(this.completionAmountValue);
+    return this.completionAmountValue !== null && Number.isFinite(montant) && montant >= 0;
   }
 
   async confirmComplete(): Promise<void> {
     const booking = this.bookingToComplete;
-    if (!booking) return;
+    if (!booking?.id || !this.canConfirmComplete) return;
+
+    const montant = Number(this.completionAmountValue);
 
     this.bookingToComplete = null;
-    await this.setStatus(booking, 'completed');
+    this.completionAmountValue = null;
+    this.busyId = booking.id;
+    this.error = '';
+    this.cdr.detectChanges();
+
+    // Liste transmise seulement si une prestation a été écartée : sinon on
+    // laisse la composition telle quelle.
+    const gardees = this.keptLines.map(l => l.line.service_id);
+    const partielle = gardees.length > 0 && gardees.length < this.completionLines.length;
+
+    this.completionLines = [];
+
+    const result = await this.adminService.completeBooking(
+      booking.id,
+      montant,
+      partielle ? gardees : undefined
+    );
+    this.busyId = null;
+
+    if (!result.success) {
+      this.error = result.error || 'La clôture a échoué.';
+      this.cdr.detectChanges();
+      return;
+    }
+    await this.load(false);
   }
 
   // --- Suppression définitive (super administrateur) ---
@@ -311,9 +413,7 @@ export class AdminBookingsComponent implements OnInit {
   amount(booking: Booking): string {
     const montant = booking.price_at_booking ?? booking.services?.price;
     if (montant === null || montant === undefined) return '—';
-    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
-      Math.round(Number(montant))
-    )} FCFA`;
+    return formatAmount(montant);
   }
 
   /**
@@ -353,16 +453,20 @@ export class AdminBookingsComponent implements OnInit {
 
   // ==================== SAISIE MANUELLE ====================
 
+  /** Filtre de la liste des prestations à cocher. */
+  manualServiceSearch = '';
+
   private emptyEntry(): ManualEntry {
     return {
-      service_id: '',
+      service_ids: [],
       client_name: '',
       client_phone: '',
       client_email: '',
       booking_date: this.todayIso(),
       start_time: '',
       discounted: false,
-      discount_percent: null
+      discount_percent: null,
+      amount: null
     };
   }
 
@@ -383,17 +487,57 @@ export class AdminBookingsComponent implements OnInit {
     await this.loadFormData();
   }
 
-  get manualService(): Service | null {
-    return this.services.find(s => s.id === this.manual.service_id) || null;
+  /** Prestations retenues, dans l'ordre d'ajout. */
+  get manualServices(): Service[] {
+    return this.manual.service_ids
+      .map(id => this.services.find(s => s.id === id))
+      .filter((s): s is Service => !!s);
+  }
+
+  /** Reste vrai tant qu'au moins une prestation est retenue. */
+  get hasManualService(): boolean {
+    return this.manual.service_ids.length > 0;
+  }
+
+  /** Prestations proposées à la sélection, filtrées par la recherche. */
+  get manualPickerServices(): Service[] {
+    const term = this.manualServiceSearch.trim().toLowerCase();
+    if (!term) return this.services;
+    return this.services.filter(s => s.name.toLowerCase().includes(term));
+  }
+
+  isManualPicked(serviceId: string): boolean {
+    return this.manual.service_ids.includes(serviceId);
+  }
+
+  toggleManualPick(serviceId: string): void {
+    this.manual.service_ids = this.isManualPicked(serviceId)
+      ? this.manual.service_ids.filter(id => id !== serviceId)
+      : [...this.manual.service_ids, serviceId];
+    this.onManualTariffChange();
+  }
+
+  clearManualPicks(): void {
+    this.manual.service_ids = [];
+    this.onManualTariffChange();
   }
 
   /**
-   * Promotion qui était en vigueur ce jour-là pour cette prestation.
+   * Promotion qui était en vigueur ce jour-là sur l'une des prestations.
    * Simple rappel : c'est le montant réellement encaissé qui fait foi, pas elle.
+   * La plus forte est retenue quand plusieurs s'appliquent.
    */
   get suggestedPromotion(): Promotion | null {
-    if (!this.manual.service_id || !this.manual.booking_date) return null;
-    return bestPromotion(this.promotions, this.manual.service_id, this.manual.booking_date);
+    if (!this.hasManualService || !this.manual.booking_date) return null;
+
+    return this.manual.service_ids
+      .map(id => bestPromotion(this.promotions, id, this.manual.booking_date))
+      .filter((p): p is Promotion => !!p)
+      .reduce<Promotion | null>(
+        (meilleure, p) =>
+          !meilleure || Number(p.discount_percent) > Number(meilleure.discount_percent) ? p : meilleure,
+        null
+      );
   }
 
   applySuggestedPromotion(): void {
@@ -402,6 +546,7 @@ export class AdminBookingsComponent implements OnInit {
 
     this.manual.discounted = true;
     this.manual.discount_percent = Number(promotion.discount_percent);
+    this.onManualTariffChange();
   }
 
   /** Remise retenue pour le calcul : zéro tant que la case n'est pas cochée. */
@@ -411,20 +556,54 @@ export class AdminBookingsComponent implements OnInit {
     return Number.isFinite(percent) ? percent : 0;
   }
 
-  /** Montant qui sera comptabilisé, recalculé à chaque frappe. */
+  /**
+   * Ce que vaudraient les prestations au tarif affiché, remise déduite.
+   * Sert de point de départ : le montant réel peut être supérieur.
+   */
+  get suggestedAmount(): number {
+    const tarif = this.manualServices.reduce((total, s) => total + (Number(s.price) || 0), 0);
+    return applyDiscount(tarif, this.manualDiscount);
+  }
+
+  /** Durée cumulée, affichée en repère à côté du montant. */
+  get manualDuration(): number {
+    return this.manualServices.reduce(
+      (total, s) => total + (Number(s.duration_minutes) || 0), 0
+    );
+  }
+
+  /** Montant qui sera comptabilisé : celui saisi. */
   get manualAmount(): number {
-    const service = this.manualService;
-    if (!service) return 0;
-    return applyDiscount(Number(service.price) || 0, this.manualDiscount);
+    const amount = Number(this.manual.amount);
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  /**
+   * Le montant saisi s'écarte-t-il du tarif ? C'est le cas normal dès qu'un
+   * ajout a été fait sur place — on le signale sans en faire une erreur.
+   */
+  get amountDiffersFromTariff(): boolean {
+    return this.hasManualService && this.manualAmount !== this.suggestedAmount;
+  }
+
+  /**
+   * Repropose le tarif quand la prestation ou la remise change.
+   *
+   * Écrase la saisie en cours, volontairement : changer de prestation rend le
+   * montant précédent caduc, le conserver ferait passer le prix d'une
+   * prestation pour celui d'une autre.
+   */
+  onManualTariffChange(): void {
+    this.manual.amount = this.hasManualService ? this.suggestedAmount : null;
   }
 
   manualAmountLabel(amount: number): string {
-    return `${new Intl.NumberFormat('fr-FR').format(amount)} FCFA`;
+    return formatAmount(amount);
   }
 
   /** Ce qui manque pour enregistrer, ou '' si la saisie est complète. */
   private get manualProblem(): string {
-    if (!this.manual.service_id) return 'Choisissez la prestation réalisée.';
+    if (!this.hasManualService) return 'Choisissez au moins une prestation réalisée.';
     if (!this.manual.client_name.trim()) return 'Indiquez le nom de la cliente ou du client.';
 
     // Le téléphone est la clé de rapprochement des visites : sans lui, la
@@ -446,6 +625,13 @@ export class AdminBookingsComponent implements OnInit {
         return 'La remise doit être comprise entre 1 et 99 %.';
       }
     }
+
+    const amount = Number(this.manual.amount);
+    if (this.manual.amount === null || !Number.isFinite(amount)) {
+      return 'Indiquez le montant encaissé.';
+    }
+    if (amount < 0) return 'Le montant encaissé ne peut pas être négatif.';
+
     return '';
   }
 
@@ -468,11 +654,12 @@ export class AdminBookingsComponent implements OnInit {
 
     const amount = this.manualAmount;
     const result = await this.adminService.createManualBooking({
-      service_id: this.manual.service_id,
+      service_ids: this.manual.service_ids,
       client_name: this.manual.client_name,
       booking_date: this.manual.booking_date,
       start_time: this.manual.start_time,
       discount_percent: this.manualDiscount,
+      amount: this.manualAmount,
       client_phone: this.manual.client_phone.trim(),
       client_email: this.manual.client_email.trim(),
       notes: 'Prestation enregistrée manuellement (réservation sur place).'
@@ -496,6 +683,11 @@ export class AdminBookingsComponent implements OnInit {
     return todayString();
   }
 
+  /** « Nattes collées + Manucure » pour un rendez-vous à plusieurs prestations. */
+  servicesLabel(booking: Booking): string {
+    return servicesLabel(booking);
+  }
+
   statusLabel(status: string): string {
     const labels: Record<string, string> = {
       pending: 'En attente',
@@ -507,10 +699,7 @@ export class AdminBookingsComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return formatDayDate(dateString);
   }
 
   formatTime(time: string): string {

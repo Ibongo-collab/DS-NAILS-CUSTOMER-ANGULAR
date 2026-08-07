@@ -22,6 +22,19 @@
       <div class="error">{{ error }}</div>
     }
 
+    <!-- Avant la liste : sous les prix, beaucoup ne descendraient pas jusque-là -->
+    @if (!loading && services.length) {
+      <p class="price-disclaimer">
+        <app-icon name="wallet" [size]="16"></app-icon>
+        <span>
+          Les tarifs indiqués sont des <strong>prix de départ</strong>. Un ajout
+          demandé sur place — motifs, fantaisies, longueur — peut faire varier
+          le montant. Le prix définitif vous est confirmé au salon avant la
+          réalisation.
+        </span>
+      </p>
+    }
+
     <div class="services-card">
       @if (loading) {
         @for (item of skeletonItems; track item) {
@@ -46,13 +59,13 @@
               <h3 class="service-name">{{ service.name }}</h3>
               @if (pricing(service); as price) {
                 <p class="service-meta">
-                  {{ service.duration_minutes | duration }} à
+                  {{ service.duration_minutes | duration }} · à partir de
                   @if (price.discountPercent) {
                     <span class="price-was">{{ priceLabel(price.basePrice) }}</span>
                     <span class="price-now">{{ priceLabel(price.finalPrice) }}</span>
                     <span class="price-tag">−{{ price.discountPercent }} %</span>
                   } @else {
-                    {{ priceLabel(price.basePrice) }}
+                    <span class="price-now">{{ priceLabel(price.basePrice) }}</span>
                   }
                 </p>
               }
@@ -62,8 +75,15 @@
             </div>
 
             @if (!isAdmin) {
-              <button class="select-btn" (click)="selectService(service)">
-                Sélectionner
+              <button
+                class="select-btn"
+                [class.already]="isSelected(service)"
+                [disabled]="isSelected(service)"
+                [attr.title]="isSelected(service)
+                  ? 'Déjà dans votre rendez-vous. Retirez-la depuis le récapitulatif pour la remplacer.'
+                  : null"
+                (click)="selectService(service)">
+                {{ isSelected(service) ? 'Déjà ajoutée' : 'Sélectionner' }}
               </button>
             }
           </article>

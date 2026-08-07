@@ -1,16 +1,23 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { AdminService } from '../admin.service';
 import { BlockedSlot, Booking, OpeningHours } from '../../models/booking.model';
-import { parseDateString, toDateString, todayString } from '../../utils/date';
+import {
+  MOIS_LONGS,
+  formatDayMonth,
+  parseDateString,
+  toDateString,
+  todayString
+} from '../../utils/date';
+import { formatAmount } from '../../utils/money';
 import { Positioned, layoutDay, toMinutes } from './layout';
+import { droppedServiceNames, servicesLabel } from '../booking-services';
 
 /** Bornes de la grille quand les horaires d'ouverture sont illisibles. */
 const HEURE_DEBUT_PAR_DEFAUT = 8 * 60;
 const HEURE_FIN_PAR_DEFAUT = 20 * 60;
 
-const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-              'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+/** En-têtes du planning : la semaine y commence le lundi, pas le dimanche. */
+const JOURS_SEMAINE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 /**
  * Un rendez-vous et sa place dans la colonne du jour.
@@ -211,7 +218,7 @@ export class AdminPlanningComponent implements OnInit {
 
       this.days.push({
         date,
-        dayName: JOURS[i],
+        dayName: JOURS_SEMAINE[i],
         dayNumber: parsed.getDate(),
         isToday: date === today,
         closed: horairesParJour.get(jourIso)?.is_closed === true,
@@ -256,9 +263,9 @@ export class AdminPlanningComponent implements OnInit {
 
     const gauche = memeMois && memeAnnee
       ? `${debut.getDate()}`
-      : `${debut.getDate()} ${MOIS[debut.getMonth()]}${memeAnnee ? '' : ' ' + debut.getFullYear()}`;
+      : `${debut.getDate()} ${MOIS_LONGS[debut.getMonth()]}${memeAnnee ? '' : ' ' + debut.getFullYear()}`;
 
-    return `${gauche} – ${fin.getDate()} ${MOIS[fin.getMonth()]} ${fin.getFullYear()}`;
+    return `${gauche} – ${fin.getDate()} ${MOIS_LONGS[fin.getMonth()]} ${fin.getFullYear()}`;
   }
 
   // ==================== BLOCS ====================
@@ -275,6 +282,16 @@ export class AdminPlanningComponent implements OnInit {
       // Une marge à droite sépare deux rendez-vous côte à côte
       width: largeur - (placed.columns > 1 ? 1.5 : 0.5)
     };
+  }
+
+  /** « Nattes collées + Manucure » pour un rendez-vous à plusieurs prestations. */
+  servicesLabel(booking: Booking): string {
+    return servicesLabel(booking);
+  }
+
+  /** Prestations réservées puis abandonnées : conservées, donc affichables. */
+  droppedLabel(booking: Booking): string {
+    return droppedServiceNames(booking).join(', ');
   }
 
   hourRange(booking: Booking): string {
@@ -308,14 +325,11 @@ export class AdminPlanningComponent implements OnInit {
   amount(booking: Booking): string {
     const montant = booking.price_at_booking ?? booking.services?.price;
     if (montant === null || montant === undefined) return '—';
-    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
-      Math.round(Number(montant))
-    )} FCFA`;
+    return formatAmount(montant);
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    return `${JOURS[(date.getDay() + 6) % 7].toLowerCase()} ${date.getDate()} ${MOIS[date.getMonth()]}`;
+    return formatDayMonth(dateString);
   }
 
   /** Nombre de rendez-vous de la semaine affichée. */

@@ -18,12 +18,18 @@ import {
 import { priceService } from './pricing';
 import { isoDayOfWeek, todayString } from '../utils/date';
 
+/** Un intervalle occupé : réservation confirmée ou créneau bloqué. */
+interface TimeRange {
+  start_time: string;
+  end_time: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
   private bookingStateSubject = new BehaviorSubject<BookingState>({
-    selectedService: null,
+    selectedServices: [],
     selectedDate: null,
     selectedTime: null,
     clientInfo: null,
@@ -33,26 +39,6 @@ export class BookingService {
   public bookingState$ = this.bookingStateSubject.asObservable();
 
   constructor(private supabase: SupabaseService) {}
-
-  // ==================== SERVICES ====================
-
-  getServices(): Observable<Service[]> {
-    return from(
-      this.supabase.client
-        .from('services')
-        .select('*')
-        .eq('active', true)
-        .order('duration_minutes', { ascending: true })
-    ).pipe(
-      map(response => {
-        if (response.error) {
-          console.error('Erreur lors de la récupération des services:', response.error);
-          return [];
-        }
-        return response.data as Service[];
-      })
-    );
-  }
 
   // ==================== CATÉGORIES ====================
 
@@ -121,7 +107,7 @@ export class BookingService {
   private toPromotions(rows: unknown): Promotion[] {
     return ((rows as any[]) ?? []).map(row => ({
       ...row,
-      service_ids: (row.promotion_services ?? []).map((lien: any) => lien.service_id)
+      service_ids: (row.promotion_services ?? []).map((lien: { service_id: string }) => lien.service_id)
     })) as Promotion[];
   }
 
@@ -186,24 +172,6 @@ export class BookingService {
 
   // ==================== HORAIRES ====================
 
-  getOpeningHours(dayOfWeek: number): Observable<OpeningHours | null> {
-    return from(
-      this.supabase.client
-        .from('opening_hours')
-        .select('*')
-        .eq('day_of_week', dayOfWeek)
-        .single()
-    ).pipe(
-      map(response => {
-        if (response.error) {
-          console.error('Erreur lors de la récupération des horaires:', response.error);
-          return null;
-        }
-        return response.data as OpeningHours;
-      })
-    );
-  }
-
   getAllOpeningHours(): Observable<OpeningHours[]> {
     return from(
       this.supabase.client
@@ -230,7 +198,7 @@ export class BookingService {
    */
   async getDatesAvailability(
     dates: string[],
-    serviceId: string
+    serviceIds: string[]
   ): Promise<Map<string, DateAvailability>> {
     const result = new Map<string, DateAvailability>();
     if (!dates.length) return result;
@@ -239,15 +207,24 @@ export class BookingService {
     const to = dates[dates.length - 1];
 
     try {
-      const [serviceRes, hoursRes, bookedRes, blockedRes] = await Promise.all([
-        this.supabase.client.from('services').select('duration_minutes').eq('id', serviceId).single(),
+      const [servicesRes, hoursRes, bookedRes, blockedRes] = await Promise.all([
+        this.supabase.client.from('services').select('id, duration_minutes').in('id', serviceIds),
         this.supabase.client.from('opening_hours').select('*'),
         this.supabase.client.rpc('get_booked_intervals_range', { p_from: from, p_to: to }),
         this.supabase.client.from('blocked_slots').select('date, start_time, end_time').gte('date', from).lte('date', to)
       ]);
 
-      const duration = serviceRes.data?.duration_minutes;
-      if (!duration) throw new Error('Service non trouvé');
+      // Le créneau couvre la somme des durées. On additionne en parcourant les
+      // identifiants demandés et non les lignes reçues : `in()` dédoublonne,
+      // une même prestation demandée deux fois ne compterait qu'une.
+      const dureeParId = new Map<string, number>();
+      for (const row of (servicesRes.data as { id: string; duration_minutes: number }[]) ?? []) {
+        dureeParId.set(row.id, Number(row.duration_minutes) || 0);
+      }
+
+      const duration = serviceIds.reduce((total, id) => total + (dureeParId.get(id) ?? 0), 0);
+
+      if (!duration) throw new Error('Prestation non trouvée');
 
       const hoursByDay = new Map<number, OpeningHours>();
       for (const row of (hoursRes.data as OpeningHours[]) ?? []) {
@@ -327,8 +304,8 @@ export class BookingService {
 
   private isSlotOccupied(
     slotTime: string,
-    bookings: any[],
-    blocked: any[],
+    bookings: TimeRange[],
+    blocked: TimeRange[],
     durationMinutes: number
   ): boolean {
     const slotStart = this.timeToMinutes(slotTime);
@@ -430,7 +407,7 @@ export class BookingService {
       }
 
       const { data, error } = await this.supabase.client.rpc('create_booking', {
-        p_service_id: booking.service_id,
+        p_service_ids: booking.service_ids,
         p_client_name: booking.client_name,
         p_client_phone: booking.client_phone,
         p_client_email: booking.client_email,
@@ -448,7 +425,7 @@ export class BookingService {
       // parcours de confirmation utilise.
       return { success: true, booking: { id: data as string } as Booking };
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de la création de la réservation:', error);
       return { success: false, error: 'Une erreur est survenue lors de la réservation.' };
     }
@@ -462,33 +439,6 @@ export class BookingService {
     }
     console.error('Erreur lors de la création de la réservation:', error);
     return 'Une erreur est survenue lors de la réservation.';
-  }
-
-  async confirmBooking(bookingId: string): Promise<boolean> {
-    const { error } = await this.supabase.client
-      .from('bookings')
-      .update({ status: 'confirmed' })
-      .eq('id', bookingId);
-
-    return !error;
-  }
-
-  /**
-   * Réservé à un client connecté dont l'email correspond, ou à un admin :
-   * depuis la fermeture de la lecture publique, un appel anonyme renvoie [].
-   */
-  async getBookingsByPhone(phone: string): Promise<Booking[]> {
-    const normalizedPhone = normalizePhone(phone);
-
-    const { data, error } = await this.supabase.client
-      .from('bookings')
-      .select('*, services(name, duration_minutes)')
-      .eq('client_phone', normalizedPhone)
-      .order('booking_date', { ascending: false })
-      .order('start_time', { ascending: false });
-
-    if (error || !data) return [];
-    return data as Booking[];
   }
 
   /**
@@ -508,7 +458,7 @@ export class BookingService {
 
     const { data, error } = await this.supabase.client
       .from('bookings')
-      .select('*, services(name, duration_minutes)')
+      .select('*, services(name, duration_minutes), booking_services(service_id, price_at_booking, duration_minutes, position, fulfilled, services(name))')
       .or(filters.join(','))
       .order('booking_date', { ascending: false })
       .order('start_time', { ascending: false });
@@ -543,7 +493,7 @@ export class BookingService {
 
   resetBookingState(): void {
     this.bookingStateSubject.next({
-      selectedService: null,
+      selectedServices: [],
       selectedDate: null,
       selectedTime: null,
       clientInfo: null,

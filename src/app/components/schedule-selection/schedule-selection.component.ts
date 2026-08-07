@@ -6,18 +6,17 @@ import { IconComponent } from '../shared/icon/icon.component';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { DateAvailability, PricedService, Promotion, Service, TimeSlot } from '../../models/booking.model';
 import { priceService } from '../../services/pricing';
+import { formatPrice } from '../../utils/money';
 import {
   daysBetween,
   endOfMonth,
   parseDateString,
   toDateString,
-  todayString
+  todayString,
+  MOIS_LONGS,
+  formatDayMonth
 } from '../../utils/date';
 
-const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-              'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
 /** Une case du calendrier. `null` pour les cases vides d'avant le 1er du mois. */
 export interface DayCell {
@@ -38,8 +37,10 @@ export interface DayCell {
   styleUrls: ['./schedule-selection.component.scss']
 })
 export class ScheduleSelectionComponent implements OnInit, OnDestroy {
-  service: Service | null = null;
-  pricing: PricedService | null = null;
+  /** Prestations du rendez-vous, dans l'ordre d'ajout. */
+  services: Service[] = [];
+  /** Prix de chacune, remise du jour retenu déduite. Même ordre. */
+  pricings: PricedService[] = [];
 
   /** Mois affiché dans le calendrier */
   viewYear = 0;
@@ -55,8 +56,8 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
   loadingDates = true;
   error = '';
 
-  /** Description repliée par défaut : elle peut faire plusieurs lignes */
-  descriptionOpen = false;
+  /** Descriptions repliées par défaut : elles peuvent faire plusieurs lignes */
+  openDescriptions = new Set<string>();
 
   private availability = new Map<string, DateAvailability>();
   private promotions: Promotion[] = [];
@@ -74,12 +75,12 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const state = this.bookingService.getCurrentState();
 
-    if (!state.selectedService) {
+    if (!state.selectedServices.length) {
       this.router.navigate(['/']);
       return;
     }
 
-    this.service = state.selectedService;
+    this.services = state.selectedServices;
     this.selectedDate = state.selectedDate;
     this.selectedTime = state.selectedTime;
 
@@ -119,12 +120,17 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
   // ==================== CHARGEMENTS ====================
 
   private async loadAvailability(): Promise<void> {
-    if (!this.service) return;
+    if (!this.services.length) return;
 
     const nbJours = daysBetween(this.horizonStart, this.horizonEnd);
     const dates = Array.from({ length: nbJours }, (_, i) => this.dateAt(i));
 
-    this.availability = await this.bookingService.getDatesAvailability(dates, this.service.id);
+    // Le créneau doit accueillir toutes les prestations : la disponibilité se
+    // calcule sur la durée cumulée, pas sur celle de la première.
+    this.availability = await this.bookingService.getDatesAvailability(
+      dates,
+      this.services.map(s => s.id)
+    );
     this.loadingDates = false;
 
     // Le service absorbe ses erreurs et rend une carte vide : sans ce contrôle,
@@ -183,19 +189,79 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
 
   /** La remise dépend du jour du rendez-vous : elle suit la date choisie. */
   private refreshPricing(): void {
-    if (!this.service) return;
-    this.pricing = priceService(
-      this.service,
-      this.promotions,
-      this.selectedDate || this.horizonStart
-    );
+    const jour = this.selectedDate || this.horizonStart;
+    this.pricings = this.services.map(s => priceService(s, this.promotions, jour));
+  }
+
+  /** Prix d'une prestation à sa position dans la liste. */
+  pricingAt(index: number): PricedService | null {
+    return this.pricings[index] ?? null;
+  }
+
+  /** Durée cumulée du rendez-vous, en minutes. */
+  get totalDuration(): number {
+    return this.services.reduce((total, s) => total + (Number(s.duration_minutes) || 0), 0);
+  }
+
+  /** Somme des prix de départ, remises déduites. */
+  get totalPrice(): number {
+    if (this.pricings.length === this.services.length) {
+      return this.pricings.reduce((total, p) => total + p.finalPrice, 0);
+    }
+    // Promotions pas encore chargées : on annonce déjà le tarif public
+    return this.services.reduce((total, s) => total + (Number(s.price) || 0), 0);
+  }
+
+  /** Vrai si au moins une prestation bénéficie d'une remise. */
+  get hasDiscount(): boolean {
+    return this.pricings.some(p => p.discountPercent > 0);
+  }
+
+  get totalBasePrice(): number {
+    return this.services.reduce((total, s) => total + (Number(s.price) || 0), 0);
   }
 
   priceLabel(price: number): string {
-    return `${new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(price || 0)} FCFA`;
+    return formatPrice(price);
+  }
+
+  // ==================== COMPOSITION DU RENDEZ-VOUS ====================
+
+  /**
+   * Retire une prestation. La dernière ne peut pas l'être : un rendez-vous
+   * vide n'a pas de sens, et la croix du bandeau sert déjà à tout reprendre.
+   */
+  removeService(index: number): void {
+    if (this.services.length <= 1) return;
+
+    this.services = this.services.filter((_, i) => i !== index);
+    this.persistServices();
+
+    // La durée totale a changé : les créneaux disponibles aussi
+    this.selectedTime = null;
+    this.loadingDates = true;
+    this.refreshPricing();
+    this.loadAvailability();
+  }
+
+  /** Renvoie au choix d'une prestation à ajouter au rendez-vous. */
+  addService(): void {
+    this.persistServices();
+    const categoryId = this.services[this.services.length - 1]?.category_id;
+    this.router.navigate(categoryId ? ['/prestations', categoryId] : ['/']);
+  }
+
+  private persistServices(): void {
+    this.bookingService.updateBookingState({ selectedServices: this.services });
+  }
+
+  toggleDescription(serviceId: string): void {
+    if (this.openDescriptions.has(serviceId)) this.openDescriptions.delete(serviceId);
+    else this.openDescriptions.add(serviceId);
+  }
+
+  isDescriptionOpen(serviceId: string): boolean {
+    return this.openDescriptions.has(serviceId);
   }
 
   // ==================== CALENDRIER ====================
@@ -251,13 +317,13 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
   }
 
   get monthLabel(): string {
-    return `${MOIS[this.viewMonth]} ${this.viewYear}`;
+    return `${MOIS_LONGS[this.viewMonth]} ${this.viewYear}`;
   }
 
   /** « Réservation possible jusqu'au 31 août. » */
   get horizonLabel(): string {
     const fin = parseDateString(this.horizonEnd);
-    return `${fin.getDate()} ${MOIS[fin.getMonth()]}`;
+    return `${fin.getDate()} ${MOIS_LONGS[fin.getMonth()]}`;
   }
 
   /** Vrai si le mois affiché contient au moins un jour réservable. */
@@ -311,9 +377,7 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
 
   /** « vendredi 7 août », en regard de la grille des créneaux. */
   get selectedDateLabel(): string {
-    if (!this.selectedDate) return '';
-    const date = parseDateString(this.selectedDate);
-    return `${JOURS[date.getDay()].toLowerCase()} ${date.getDate()} ${MOIS[date.getMonth()]}`;
+    return this.selectedDate ? formatDayMonth(this.selectedDate) : '';
   }
 
   get canContinue(): boolean {
@@ -331,17 +395,21 @@ export class ScheduleSelectionComponent implements OnInit, OnDestroy {
     this.router.navigate(['/info']);
   }
 
-  toggleDescription(): void {
-    this.descriptionOpen = !this.descriptionOpen;
-  }
-
-  /** La croix ramène à la liste d'où la prestation a été choisie. */
-  clearService(): void {
-    const categoryId = this.service?.category_id;
+  /**
+   * Abandonne le rendez-vous en cours et repart du choix des prestations.
+   * Le retirer de l'état évite de retrouver l'ancienne sélection au retour.
+   */
+  clearAll(): void {
+    const categoryId = this.services[0]?.category_id;
+    this.bookingService.updateBookingState({
+      selectedServices: [],
+      selectedDate: null,
+      selectedTime: null
+    });
     this.router.navigate(categoryId ? ['/prestations', categoryId] : ['/']);
   }
 
   goBack(): void {
-    this.clearService();
+    this.clearAll();
   }
 }

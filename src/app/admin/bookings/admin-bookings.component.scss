@@ -79,6 +79,10 @@
   grid-column: span 2;
 }
 
+/* Le sélecteur de prestations occupe sa propre rangée, hors de la grille :
+   inséré dedans, sa liste déroulante en écrasait les autres champs. */
+.manual-form { margin-top: 1.1rem; }
+
 .optional {
   font-weight: 400;
   text-transform: none;
@@ -115,35 +119,20 @@
   max-width: 110px;
 }
 
-.amount-box {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  margin-left: auto;
-  padding: 0.55rem 0.9rem;
-  border-radius: 10px;
-  background: #FCF4FB;
-  text-align: right;
+.manual-price .field-amount {
+  max-width: 170px;
 }
 
-.amount-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #7A3A70;
-}
-
-.amount-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #69005A;
-}
-
+/* Le tarif de référence, quand le montant saisi s'en écarte. Une simple
+   mention suffit : l'encadré récapitulatif répétait le chiffre déjà visible
+   dans le champ juste à côté. */
 .amount-base {
-  font-size: 0.75rem;
+  align-self: center;
+  padding-bottom: 0.55rem;
+  font-size: 0.8rem;
   color: #8A6A85;
   text-decoration: line-through;
+  white-space: nowrap;
 }
 
 .manual-suggestion {
@@ -180,6 +169,90 @@
 }
 
 // --- Confirmation de clôture ---
+
+/* Composition réellement réalisée : sur trois prestations réservées, la
+   cliente a pu renoncer à la dernière. */
+.completion-lines {
+  margin-bottom: 1.15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(105, 0, 90, 0.14);
+  border-radius: 10px;
+}
+
+.completion-lines-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #7A3A70;
+  margin-bottom: 0.5rem;
+}
+
+.completion-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  font-size: 0.87rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #4A2344;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #69005A;
+    cursor: pointer;
+  }
+
+  /* Écartée : barrée plutôt que masquée, pour qu'on voie ce qu'on retire */
+  &.dropped {
+    color: #9A8E97;
+
+    .completion-line-name,
+    .completion-line-price { text-decoration: line-through; }
+  }
+}
+
+.completion-line-name { flex: 1; }
+
+.completion-line-price {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le montant n'est plus une donnée à lire mais un champ à vérifier : il doit
+   se distinguer du récapitulatif au-dessus. */
+.completion-amount {
+  margin-bottom: 1.15rem;
+
+  input {
+    max-width: 200px;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+}
+
+.field-help {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #8A6A85;
+  text-transform: none;
+  letter-spacing: 0;
+
+  strong { color: #69005A; }
+}
+
+/* Signale l'écart au tarif dans la ligne d'aide, plutôt que par un bandeau
+   supplémentaire : la fenêtre en comptait déjà trop. */
+.field-help-flag {
+  color: #8A6100;
+  font-weight: 600;
+}
 
 /* Ambre : une conséquence à peser, pas une erreur */
 

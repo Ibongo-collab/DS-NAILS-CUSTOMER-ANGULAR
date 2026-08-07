@@ -280,3 +280,10 @@
     flex: 1;
   }
 }
+
+/* Prestation réservée puis abandonnée : conservée en base, montrée barrée —
+   elle explique un montant plus faible que prévu. */
+.recap-value.dropped {
+  color: #8A6A85;
+  text-decoration: line-through;
+}

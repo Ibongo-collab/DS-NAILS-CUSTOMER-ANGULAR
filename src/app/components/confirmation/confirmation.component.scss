@@ -96,6 +96,47 @@
   margin-right: 0.4rem;
 }
 
+/* Détail du rendez-vous à plusieurs prestations : le total ne doit pas
+   tomber du ciel, chaque ligne montre sa part. */
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.18rem 0;
+  font-size: 0.9rem;
+  color: #4A2344;
+}
+
+.price-line-name {
+  color: #7A6A78;
+}
+
+.price-line-value {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.price-line-total {
+  margin-top: 0.3rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(105, 0, 90, 0.12);
+  font-weight: 700;
+  color: #69005A;
+
+  .price-line-name { color: #69005A; font-weight: 700; }
+  .price-line-value { font-weight: 700; }
+}
+
+/* Le montant affiché est un point de départ, pas un engagement : mieux vaut
+   le dire ici que le laisser découvrir au moment de payer. */
+.price-variable {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #8A6A85;
+}
+
 .price-note {
   margin-top: 0.15rem;
   font-size: 0.8rem;

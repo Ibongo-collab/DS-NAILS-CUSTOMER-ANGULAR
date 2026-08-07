@@ -7,7 +7,7 @@ import { Booking } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { TimePipe } from '../../pipes/time.pipe';
-import { parseDateString, todayString } from '../../utils/date';
+import { formatDayDate, todayString } from '../../utils/date';
 
 @Component({
   selector: 'app-client-space',
@@ -153,10 +153,7 @@ export class ClientSpaceComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    const days   = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
-    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return formatDayDate(dateString);
   }
 
   async logout(): Promise<void> {

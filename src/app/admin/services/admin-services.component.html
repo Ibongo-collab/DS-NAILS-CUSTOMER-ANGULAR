@@ -158,6 +158,7 @@
         Cochez pour ranger dans cette catégorie, décochez pour l'en retirer.
       </p>
 
+      <div class="modal-scroll">
       <input
         class="picker-search"
         type="text"
@@ -166,7 +167,7 @@
 
       <ul class="picker-list">
         @for (service of pickerServices; track service.id) {
-          <li class="picker-item" [class.selected]="isPicked(service.id)">
+          <li class="picker-item" [class.picked]="isPicked(service.id)">
             <label>
               <input
                 type="checkbox"
@@ -195,6 +196,7 @@
           <strong>déplacées</strong> ici.
         </p>
       }
+      </div>
 
       <div class="modal-actions">
         <button class="btn-sm" (click)="closePicker()">Annuler</button>

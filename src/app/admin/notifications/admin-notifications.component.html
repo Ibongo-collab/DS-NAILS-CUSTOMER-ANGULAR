@@ -92,7 +92,7 @@
       <div class="filters">
         <div class="field">
           <label for="status">État</label>
-          <select id="status" [(ngModel)]="statusFilter">
+          <select id="status" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
             @for (option of statusOptions; track option.value) {
               <option [ngValue]="option.value">{{ option.label }}</option>
             }
@@ -100,7 +100,7 @@
         </div>
         <div class="field">
           <label for="audience">Destinataire</label>
-          <select id="audience" [(ngModel)]="audienceFilter">
+          <select id="audience" [(ngModel)]="audienceFilter" (ngModelChange)="onFilterChange()">
             <option [ngValue]="'all'">Tous</option>
             <option [ngValue]="'admin'">Salon</option>
             <option [ngValue]="'client'">Clientes</option>
@@ -121,7 +121,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (item of filtered; track item.id) {
+          @for (item of pagedNotifications; track item.id) {
             <tr>
               <td class="cell-muted">{{ formatMoment(item.created_at) }}</td>
               <td class="cell-strong">{{ eventLabel(item.event) }}</td>
@@ -158,5 +158,22 @@
         </tbody>
       </table>
     </div>
+
+    @if (filtered.length) {
+      <div class="panel-body pagination">
+        <span class="pagination-info">
+          {{ rangeStart }}–{{ rangeEnd }} sur {{ filtered.length }}
+        </span>
+        <div class="pagination-controls">
+          <button class="btn-sm" [disabled]="page <= 1" (click)="goToPage(page - 1)">
+            Précédent
+          </button>
+          <span class="pagination-page">Page {{ page }} / {{ pageCount }}</span>
+          <button class="btn-sm" [disabled]="page >= pageCount" (click)="goToPage(page + 1)">
+            Suivant
+          </button>
+        </div>
+      </div>
+    }
   </div>
 }

@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { DurationPipe } from '../../pipes/duration.pipe';
 import { PricedService, Promotion, Service, ServiceCategory } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
+import { formatPrice } from '../../utils/money';
 
 @Component({
   selector: 'app-service-selection',
@@ -114,19 +115,30 @@ export class ServiceSelectionComponent implements OnInit {
   }
 
   priceLabel(price: number): string {
-    return `${new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(price || 0)} FCFA`;
+    return formatPrice(price);
   }
 
-  /** Choisir une prestation lance le parcours de réservation. */
+  /**
+   * Ajoute la prestation au rendez-vous en cours, puis revient au récapitulatif.
+   *
+   * On ajoute au lieu de remplacer : la cliente arrive parfois ici depuis le
+   * bouton « Ajouter une prestation » de l'écran suivant, pour compléter son
+   * rendez-vous.
+   */
   selectService(service: Service): void {
+    const deja = this.bookingService.getCurrentState().selectedServices;
+
     this.bookingService.updateBookingState({
-      selectedService: service,
+      selectedServices: [...deja, service],
       currentStep: 2
     });
     this.router.navigate(['/date']);
+  }
+
+  /** Déjà retenue pour ce rendez-vous : le bouton le signale. */
+  isSelected(service: Service): boolean {
+    return this.bookingService.getCurrentState()
+      .selectedServices.some(s => s.id === service.id);
   }
 
   goBack(): void {

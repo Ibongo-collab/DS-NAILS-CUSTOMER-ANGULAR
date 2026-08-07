@@ -6,7 +6,8 @@ import { AuthService } from '../../services/auth.service';
 import { BookingState, PricedService } from '../../models/booking.model';
 import { IconComponent } from '../shared/icon/icon.component';
 import { TimePipe } from '../../pipes/time.pipe';
-import { parseDateString } from '../../utils/date';
+import { formatLongDate } from '../../utils/date';
+import { formatPrice } from '../../utils/money';
 
 @Component({
   selector: 'app-confirmation',
@@ -17,8 +18,8 @@ import { parseDateString } from '../../utils/date';
 })
 export class ConfirmationComponent implements OnInit {
   bookingState: BookingState | null = null;
-  /** Prix réellement facturé : remise en vigueur à la date du rendez-vous. */
-  pricing: PricedService | null = null;
+  /** Prix de chaque prestation, remise en vigueur à la date du rendez-vous. */
+  pricings: PricedService[] = [];
   private isAuthenticated = false;
   private destroyRef = inject(DestroyRef);
 
@@ -32,7 +33,7 @@ export class ConfirmationComponent implements OnInit {
   ngOnInit(): void {
     this.bookingState = this.bookingService.getCurrentState();
 
-    if (!this.bookingState.selectedService ||
+    if (!this.bookingState.selectedServices.length ||
         !this.bookingState.selectedDate ||
         !this.bookingState.selectedTime ||
         !this.bookingState.clientInfo) {
@@ -57,22 +58,52 @@ export class ConfirmationComponent implements OnInit {
    * été figé, pas celui du jour de la réservation.
    */
   private loadPricing(): void {
-    const service = this.bookingState?.selectedService;
+    const services = this.bookingState?.selectedServices ?? [];
     const date = this.bookingState?.selectedDate;
-    if (!service) return;
+    if (!services.length) return;
 
     this.bookingService.getActivePromotions(date || undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (promotions) => {
-          this.pricing = this.bookingService.priceOf(service, promotions);
+          this.pricings = services.map(s => this.bookingService.priceOf(s, promotions));
           this.cdr.detectChanges();
         }
       });
   }
 
+  /** Prix d'une prestation à sa position dans la liste. */
+  pricingAt(index: number): PricedService | null {
+    return this.pricings[index] ?? null;
+  }
+
+  get totalPrice(): number {
+    const services = this.bookingState?.selectedServices ?? [];
+    if (this.pricings.length === services.length) {
+      return this.pricings.reduce((total, p) => total + p.finalPrice, 0);
+    }
+    return services.reduce((total, s) => total + (Number(s.price) || 0), 0);
+  }
+
+  get totalBasePrice(): number {
+    return (this.bookingState?.selectedServices ?? [])
+      .reduce((total, s) => total + (Number(s.price) || 0), 0);
+  }
+
+  get hasDiscount(): boolean {
+    return this.pricings.some(p => p.discountPercent > 0);
+  }
+
+  /** Durée cumulée du rendez-vous, en minutes. */
+  get totalDuration(): number {
+    return (this.bookingState?.selectedServices ?? [])
+      .reduce((total, s) => total + (Number(s.duration_minutes) || 0), 0);
+  }
+
   priceLabel(price: number): string {
-    return `${new Intl.NumberFormat('fr-FR').format(price || 0)} FCFA`;
+    // Deux décimales, comme les deux écrans précédents : le montant confirmé
+    // doit s'écrire exactement comme celui qui a été choisi.
+    return formatPrice(price);
   }
 
   /** Adresse saisie à la réservation, seule clé de rattachement possible. */
@@ -97,21 +128,17 @@ export class ConfirmationComponent implements OnInit {
   }
 
   formatDate(dateString: string): string {
-    const date = parseDateString(dateString);
-    const dayNames   = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-                        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-    return `${dayNames[date.getDay()]} ${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    return formatLongDate(dateString);
   }
 
   calculateEndTime(): string {
-    if (!this.bookingState?.selectedTime || !this.bookingState?.selectedService) {
+    if (!this.bookingState?.selectedTime || !this.bookingState?.selectedServices.length) {
       return '';
     }
 
     const [hours, minutes] = this.bookingState.selectedTime.split(':').map(Number);
-    const durationMinutes = this.bookingState.selectedService.duration_minutes;
-    const endMinutes = minutes + durationMinutes;
+    // Le créneau couvre l'ensemble des prestations, pas seulement la première
+    const endMinutes = minutes + this.totalDuration;
     const endHours = hours + Math.floor(endMinutes / 60);
     const finalMinutes = endMinutes % 60;
 

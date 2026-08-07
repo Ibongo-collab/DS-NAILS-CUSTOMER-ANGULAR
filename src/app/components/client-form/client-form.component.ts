@@ -48,7 +48,7 @@ export class ClientFormComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const currentState = this.bookingService.getCurrentState();
-    if (!currentState.selectedService || !currentState.selectedDate || !currentState.selectedTime) {
+    if (!currentState.selectedServices.length || !currentState.selectedDate || !currentState.selectedTime) {
       this.router.navigate(['/']);
       return;
     }
@@ -198,7 +198,7 @@ export class ClientFormComponent implements OnInit {
   async submit(): Promise<void> {
     const currentState = this.bookingService.getCurrentState();
 
-    if (!currentState.selectedService || !currentState.selectedDate || !currentState.selectedTime) {
+    if (!currentState.selectedServices.length || !currentState.selectedDate || !currentState.selectedTime) {
       this.error = 'Informations de réservation manquantes';
       return;
     }
@@ -207,7 +207,7 @@ export class ClientFormComponent implements OnInit {
     this.error = '';
 
     const bookingRequest: BookingRequest = {
-      service_id: currentState.selectedService.id,
+      service_ids: currentState.selectedServices.map(s => s.id),
       client_name: this.clientName,
       client_phone: normalizePhone(this.clientPhone.trim()),
       client_email: this.clientEmail.trim(),
@@ -236,7 +236,7 @@ export class ClientFormComponent implements OnInit {
         this.submitting = false;
         this.cdr.detectChanges();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur lors de la soumission:', err);
       this.error = 'Une erreur inattendue est survenue. Veuillez réessayer.';
       this.submitting = false;

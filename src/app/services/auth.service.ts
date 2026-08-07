@@ -431,8 +431,8 @@ export class AuthService {
       if (error && !this.isMissingSessionError(error.message)) {
         console.error('Erreur lors de la déconnexion:', error);
       }
-    } catch (error: any) {
-      if (!this.isMissingSessionError(error?.message)) {
+    } catch (error) {
+      if (!this.isMissingSessionError((error as { message?: string })?.message)) {
         console.error('Erreur lors de la déconnexion:', error);
       }
       // Le serveur ne reconnaît plus la session : on purge le stockage local,

@@ -43,6 +43,48 @@ export function isoDayOfWeek(dateString: string): number {
   return parseDateString(dateString).getDay() || 7;
 }
 
+// ==================== AFFICHAGE ====================
+// Ces libellés étaient recopiés dans une dizaine d'écrans, avec des variantes.
+// Les réunir ici évite qu'un « fév. » apparaisse ici et un « fév » là.
+
+export const JOURS_COURTS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+export const JOURS_LONGS =
+  ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+export const MOIS_COURTS =
+  ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+export const MOIS_LONGS =
+  ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+/** « Ven 7 août 2026 » — listes et tableaux, où la place manque. */
+export function formatDayDate(dateString: string): string {
+  const date = parseDateString(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return `${JOURS_COURTS[date.getDay()]} ${date.getDate()} ${MOIS_COURTS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** « 7 août 2026 » — quand le jour de la semaine n'apporte rien. */
+export function formatShortDate(dateString: string): string {
+  const date = parseDateString(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return `${date.getDate()} ${MOIS_COURTS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** « Vendredi 7 août 2026 » — écrans clients, où la lecture prime. */
+export function formatLongDate(dateString: string): string {
+  const date = parseDateString(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return `${JOURS_LONGS[date.getDay()]} ${date.getDate()} ${MOIS_LONGS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** « vendredi 7 août » — au fil d'une phrase, sans l'année. */
+export function formatDayMonth(dateString: string): string {
+  const date = parseDateString(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return `${JOURS_LONGS[date.getDay()].toLowerCase()} ${date.getDate()} ${MOIS_LONGS[date.getMonth()]}`;
+}
+
 /**
  * Dernier jour du mois de la date donnée, au format `YYYY-MM-DD`.
  *

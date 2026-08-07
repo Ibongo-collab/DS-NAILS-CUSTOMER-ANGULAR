@@ -40,17 +40,47 @@
         chiffre d'affaires.
       </p>
 
-      <div class="field-grid manual-form">
-        <div class="field">
-          <label for="m-service">Prestation</label>
-          <select id="m-service" [(ngModel)]="manual.service_id">
-            <option value="">Choisir…</option>
-            @for (service of services; track service.id) {
-              <option [value]="service.id">{{ service.name }}</option>
+      <!-- Prestations : même sélecteur que les promotions -->
+      <div class="picker">
+        <div class="picker-head">
+          <span class="picker-count">
+            {{ manual.service_ids.length }} prestation(s)
+            @if (manualDuration) {
+              · {{ manualDuration | duration }}
             }
-          </select>
+          </span>
+          <input
+            class="picker-search"
+            type="text"
+            [(ngModel)]="manualServiceSearch"
+            placeholder="Rechercher une prestation">
+          <button
+            class="btn-sm"
+            [disabled]="!manual.service_ids.length"
+            (click)="clearManualPicks()">
+            Tout décocher
+          </button>
         </div>
 
+        <ul class="picker-list">
+          @for (service of manualPickerServices; track service.id) {
+            <li class="picker-item" [class.picked]="isManualPicked(service.id)">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="isManualPicked(service.id)"
+                  (change)="toggleManualPick(service.id)">
+                <span>{{ service.name }}</span>
+              </label>
+              <span class="picker-note">{{ manualAmountLabel(service.price) }}</span>
+            </li>
+          } @empty {
+            <li class="picker-empty">Aucune prestation ne correspond.</li>
+          }
+        </ul>
+      </div>
+
+      <div class="field-grid manual-form">
         <div class="field">
           <label for="m-name">Nom du client</label>
           <input id="m-name" type="text" [(ngModel)]="manual.client_name" placeholder="Nom et prénom">
@@ -82,7 +112,10 @@
 
       <div class="manual-price">
         <label class="check-line">
-          <input type="checkbox" [(ngModel)]="manual.discounted">
+          <input
+            type="checkbox"
+            [(ngModel)]="manual.discounted"
+            (ngModelChange)="onManualTariffChange()">
           <span>Une remise a été appliquée</span>
         </label>
 
@@ -96,26 +129,30 @@
               max="99"
               step="1"
               [(ngModel)]="manual.discount_percent"
+              (ngModelChange)="onManualTariffChange()"
               placeholder="20">
           </div>
         }
 
-        @if (manualService; as service) {
-          <div class="amount-box">
-            <span class="amount-label">Montant encaissé</span>
-            <span class="amount-value">{{ manualAmountLabel(manualAmount) }}</span>
-            @if (manual.discounted && manualAmount !== service.price) {
-              <span class="amount-base">
-                prix public {{ manualAmountLabel(service.price) }}
-              </span>
-            }
-          </div>
+        <div class="field field-amount">
+          <label for="m-amount">Montant encaissé (FCFA)</label>
+          <input
+            id="m-amount"
+            type="number"
+            min="0"
+            step="100"
+            [(ngModel)]="manual.amount"
+            placeholder="3500">
+        </div>
+
+        @if (amountDiffersFromTariff) {
+          <span class="amount-base">tarif {{ manualAmountLabel(suggestedAmount) }}</span>
         }
       </div>
 
       @if (suggestedPromotion; as promotion) {
         <p class="manual-suggestion">
-          Une promotion était en cours ce jour-là :
+          Promotion en cours ce jour-là :
           <strong>{{ promotion.name }} −{{ promotion.discount_percent }} %</strong>.
           <button type="button" class="link-btn" (click)="applySuggestedPromotion()">
             L'appliquer
@@ -131,9 +168,8 @@
           {{ manualSaving ? 'Enregistrement…' : 'Ajouter au chiffre d\'affaires' }}
         </button>
         <span class="manual-hint">
-          Vérifiez que le montant correspond à ce qui a été réglé sur place.
-          Le téléphone sert à rattacher la prestation à une cliente dans les
-          statistiques.
+          Le montant est pré-rempli au tarif ; saisissez ce qui a réellement
+          été réglé.
         </span>
       </div>
     </div>
@@ -212,7 +248,7 @@
                 <div>{{ booking.client_phone }}</div>
                 <div class="cell-muted">{{ booking.client_email }}</div>
               </td>
-              <td>{{ booking.services?.name || '—' }}</td>
+              <td>{{ servicesLabel(booking) }}</td>
               <td class="cell-amount">
                 <span
                   [class.amount-estimated]="isCurrentTariff(booking)"
@@ -240,7 +276,8 @@
                   <button
                     class="btn-sm"
                     [disabled]="busyId === booking.id"
-                    (click)="askComplete(booking)">
+                    (click)="askComplete(booking)"
+                    title="Clôturer et comptabiliser — le montant reste ajustable">
                     Terminer
                   </button>
                 } @else if (pendingLabel(booking); as pending) {
@@ -306,6 +343,7 @@
 
       <h3 class="modal-title" id="complete-title">Marquer cette réservation comme terminée ?</h3>
 
+      <div class="modal-scroll">
       <div class="modal-recap">
         <div class="recap-row">
           <span class="recap-label">{{ clientLabel(bookingToComplete) }}</span>
@@ -313,7 +351,7 @@
         </div>
         <div class="recap-row">
           <span class="recap-label">Prestation</span>
-          <span class="recap-value">{{ bookingToComplete.services?.name || '—' }}</span>
+          <span class="recap-value">{{ servicesLabel(bookingToComplete) }}</span>
         </div>
         <div class="recap-row">
           <span class="recap-label">Date</span>
@@ -322,24 +360,68 @@
           </span>
         </div>
         <div class="recap-row">
-          <span class="recap-label">Montant</span>
-          <span class="recap-value strong">{{ completionAmount(bookingToComplete) }}</span>
+          <span class="recap-label">Prix de départ</span>
+          <span class="recap-value">{{ completionAmount(bookingToComplete) }}</span>
         </div>
       </div>
 
-      <p class="modal-warning">
-        Cette réservation sera <strong>comptabilisée comme payée</strong> :
-        son montant entrera dans le chiffre d'affaires, le panier moyen et les
-        classements de l'écran Statistiques.
-      </p>
+      @if (hasCompletionLines) {
+        <div class="completion-lines">
+          <p class="completion-lines-title">Prestations réalisées</p>
+          @for (entry of completionLines; track $index) {
+            <label class="completion-line" [class.dropped]="!entry.done">
+              <input
+                type="checkbox"
+                [checked]="entry.done"
+                [disabled]="entry.done && keptLines.length <= 1"
+                (change)="toggleCompletionLine($index)">
+              <span class="completion-line-name">{{ entry.name }}</span>
+              <span class="completion-line-price">
+                {{ manualAmountLabel(entry.line.price_at_booking ?? 0) }}
+              </span>
+            </label>
+          }
+          <p class="field-help">
+            Décochez ce à quoi la cliente a renoncé.
+          </p>
+        </div>
+      }
+
+      <div class="field completion-amount">
+        <label for="complete-amount">Montant réellement encaissé (FCFA)</label>
+        <input
+          id="complete-amount"
+          type="number"
+          min="0"
+          step="100"
+          [(ngModel)]="completionAmountValue">
+        <p class="field-help">
+          <strong>Modifiable</strong> — saisissez ce qui a réellement été réglé.
+          @if (completionAmountAdjusted) {
+            <span class="field-help-flag">Ajusté par rapport au prix de départ.</span>
+          }
+        </p>
+      </div>
+
+      @if (completingEarly) {
+        <p class="modal-warning">
+          <strong>Ce rendez-vous n'est pas encore terminé.</strong> Son montant
+          entrerait dans le chiffre d'affaires sans que la prestation ait été
+          rendue.
+        </p>
+      }
 
       <p class="modal-hint">
-        Ne la clôturez que si la prestation a bien été réalisée et réglée.
+        Ce montant entre immédiatement dans les comptes.
       </p>
+      </div>
 
       <div class="modal-actions">
         <button class="btn-sm" (click)="dismissComplete()">Annuler</button>
-        <button class="btn-sm btn-primary-sm" (click)="confirmComplete()">
+        <button
+          class="btn-sm btn-primary-sm"
+          [disabled]="!canConfirmComplete"
+          (click)="confirmComplete()">
           Oui, terminer
         </button>
       </div>
@@ -358,6 +440,7 @@
 
       <h3 class="modal-title" id="delete-title">Supprimer définitivement cette réservation ?</h3>
 
+      <div class="modal-scroll">
       <div class="modal-recap">
         <div class="recap-row">
           <span class="recap-label">{{ clientLabel(booking) }}</span>
@@ -365,7 +448,7 @@
         </div>
         <div class="recap-row">
           <span class="recap-label">Prestation</span>
-          <span class="recap-value">{{ booking.services?.name || '—' }}</span>
+          <span class="recap-value">{{ servicesLabel(booking) }}</span>
         </div>
         <div class="recap-row">
           <span class="recap-label">Date</span>
@@ -398,6 +481,7 @@
           type="text"
           [(ngModel)]="deleteReason"
           placeholder="Doublon, saisie d'essai…">
+      </div>
       </div>
 
       <div class="modal-actions">
